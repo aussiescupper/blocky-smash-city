@@ -165,6 +165,7 @@
     <div class="slot" data-w="14"><b>X</b>💣<br>Grenade</div>
     <div class="slot" data-w="15"><b>N</b>❄️<br>Freeze</div>
     <div class="slot" data-w="16"><b>V</b>🗡️<br>Laser</div>
+    <div class="slot" data-w="17"><b>J</b>🎈<br>Helium</div>
   </div>
   <div id="bubbles"></div>
   <div id="bodyHud" title="Your body"><div id="bodyStatus"></div><div id="bodyLbl">YOU</div><div id="bodySvg"></div></div>
@@ -197,7 +198,7 @@
   <h1>BLOCKY<br><span>SMASH CITY</span></h1>
   <div class="mpanel on" id="mpHome">
     <button class="mbtn play" id="playBtn">▶ PLAY</button>
-    <button class="mbtn" id="labBtn" style="background:#00acc1">🧪 POOL LAB <small style="font-size:13px">(20 pools)</small></button>
+    <button class="mbtn" id="labBtn" style="background:#00acc1">🧪 POOL LAB <small style="font-size:13px">(19 pools)</small></button>
     <button class="mbtn" data-go="mpAvatar">👕 AVATAR EDITOR</button>
     <button class="mbtn" data-go="mpSettings">⚙️ SETTINGS</button>
     <button class="mbtn" data-go="mpControls">🎮 CONTROLS</button>
@@ -223,6 +224,7 @@
       <kbd>-</kbd> Flamethrower (hold) <kbd>=</kbd> Rocket launcher<br>
       <kbd>K</kbd> Medkit — click heals you, right-click heals someone<br>
       <kbd>Z</kbd> Shotgun <kbd>X</kbd> Grenade <kbd>N</kbd> Freeze ray (hold) <kbd>V</kbd> Laser sword<br>
+      <kbd>J</kbd> Helium canister — strap it to someone's mouth and watch them float away<br>
       <b>iPad:</b> left side = joystick, swipe right side = look, big buttons = use / jump<br>
       <b>Right-click</b> with the burger to eat it yourself (100 = 💥)<br>
       <kbd>R</kbd> ragdoll yourself / get up<br>
@@ -296,7 +298,7 @@ const FAT_TIERS = [1, 1.5, 2, 3, 4, 5, 6], FAT_COSTS = [500, 1500, 4000, 8000, 1
 if (save.fatMax > 6) save.fatMax = 6;
 if (save.look && save.look.fat > 6) save.look.fat = 6;
 function persist() { try { localStorage.setItem("blockySmashSave3", JSON.stringify(save)); } catch (e) {} }
-const GAME_VERSION = "2.2.0";
+const GAME_VERSION = "2.3.0";
 let mode = "city";   // "city" or "lab" (Pool Lab)
 
 // ================= renderer / sky / post shader =================
@@ -456,7 +458,6 @@ const POOL_TYPES = {
   gold:  { name: "GOLD", icon: "🪙", color: 0xffc83a, op: 0.96, emissive: 0x3a2600, buoy: 28, drag: 4, slow: 0.3 },
   blood: { name: "BLOOD", icon: "🩸", color: 0x8a0000, op: 0.95, emissive: 0x000000, buoy: 35, drag: 1.6, slow: 0.6 },
   shark: { name: "SHARK", icon: "🦈", color: 0x1565c0, op: 0.62, emissive: 0x000000, buoy: 36, drag: 1.3, slow: 0.6 },
-  helium: { name: "HELIUM", icon: "🎈", color: 0xf8bbd0, op: 0.45, emissive: 0x000000, buoy: 60, drag: 0.8, slow: 0.8 },
   paint: { name: "PAINT", icon: "🎨", color: 0xff4fa3, op: 0.92, emissive: 0x000000, buoy: 35, drag: 1.5, slow: 0.6 },
   hole:  { name: "BLACK HOLE", icon: "🕳️", color: 0x120020, op: 0.97, emissive: 0x2a0050, buoy: 0, drag: 0.5, slow: 0.4 }
 };
@@ -956,6 +957,13 @@ function makeLaserSword() {
   g.add(mesh(B(0.16, 3.0, 0.16), new THREE.MeshBasicMaterial({ color: 0xff3030 }), 0, -1.98, 0, false));
   return g;
 }
+function makeHeliumCan() {
+  const g = new THREE.Group(); g.position.set(0, -0.75, 0.1);
+  g.add(mesh(CY(0.26, 0.26, 1.1), M(0xb0bec5))); g.add(mesh(CY(0.27, 0.27, 0.18), M(0xff4081), 0, 0.3, 0, false));
+  g.add(mesh(CY(0.1, 0.1, 0.3), M(0x455a64), 0, 0.7, 0)); g.add(mesh(B(0.14, 0.14, 0.45), M(0x333333), 0, 0.8, 0.2));
+  g.rotation.x = Math.PI / 2;
+  return g;
+}
 function makeMedkit() {
   const g = new THREE.Group(); g.position.set(0, -0.75, 0.1);
   g.add(mesh(B(0.8, 0.3, 0.6), M(0xffffff)));
@@ -965,7 +973,7 @@ function makeMedkit() {
   return g;
 }
 function makeHeldBurger() { const b = makeBurger(0.7); b.rotation.x = Math.PI / 2; b.position.set(0, -0.75, 0.1); return b; }
-const TOOL_MAKERS = [null, makeGun, makeKnife, makeSword, makeBat, makeHeldBurger, null, makeChainsaw, makeAxe, makeHammer, makeFlamer, makeRocketL, makeMedkit, makeShotgun, makeGrenadeHeld, makeFreezeRay, makeLaserSword];
+const TOOL_MAKERS = [null, makeGun, makeKnife, makeSword, makeBat, makeHeldBurger, null, makeChainsaw, makeAxe, makeHammer, makeFlamer, makeRocketL, makeMedkit, makeShotgun, makeGrenadeHeld, makeFreezeRay, makeLaserSword, makeHeliumCan];
 
 // ================= audio (synthesised, no voices) =================
 let actx = null, master = null, wet = null, noiseBuf = null;
@@ -1039,6 +1047,8 @@ const sfx = {
   laser() { osc({ type: "sawtooth", f: 180, f2: 520, dur: 0.22, vol: 0.12, rev: 0.3 }); burst({ dur: 0.2, type: "bandpass", f: 1500, q: 2, vol: 0.2 }); },
   shatter() { for (let i = 0; i < 6; i++) { burst({ dur: 0.05, type: "highpass", f: 5000, vol: 0.5, when: i * 0.03, rev: 0.3 }); osc({ f: rand(2500, 5000), dur: 0.2, vol: 0.04, when: i * 0.04, rev: 0.4 }); } },
   freeze() { osc({ f: 1800, f2: 600, dur: 0.4, vol: 0.08, rev: 0.4 }); burst({ dur: 0.3, type: "highpass", f: 6000, vol: 0.15 }); },
+  hiss() { burst({ dur: 0.35, type: "highpass", f: 4500, vol: 0.12, attack: 0.03, rev: 0 }); },
+  fart() { for (let i = 0; i < 7; i++) osc({ type: "sawtooth", f: rand(65, 115), f2: rand(45, 80), dur: 0.13, vol: 0.22, when: i * 0.09, rev: 0.1 }); burst({ dur: 0.9, type: "lowpass", f: 450, f2: 150, vol: 0.4, rev: 0.2 }); },
   heal() { [523, 659, 784, 1047].forEach((f, i) => osc({ type: "triangle", f, dur: 0.25, vol: 0.12, when: i * 0.07, rev: 0.3 })); },
   grab() { burst({ dur: 0.08, type: "bandpass", f: 700, q: 2, vol: 0.4, rev: 0 }); },
   cash() { osc({ type: "triangle", f: 1318, dur: 0.12, vol: 0.1 }); osc({ type: "triangle", f: 1760, dur: 0.3, vol: 0.1, when: 0.07 }); osc({ f: 2637, dur: 0.25, vol: 0.03, when: 0.07 }); },
@@ -1080,6 +1090,9 @@ const LINES = {
   zap: ["BZZZZZT!", "AAAAH-ZZT!", "MY HAIR!", "Z-z-zappy!"],
   oil: ["Ew, it's oily!", "I'm all greasy!", "Don't light a match!"],
   soda: ["It's fizzy!", "It tickles!", "*BUURP*", "Bubbles everywhere!"],
+  heliumtank: ["What's that tank for?!", "Get that away from my face!", "Is that... helium?!"],
+  helmouth: ["MMMPH!", "MMMMMMPH!!", "*muffled screaming*", "MMPH MMPH!"],
+  fart: ["Oops...", "Excuse me!", "Uh oh...", "That wasn't me!"],
   grenade: ["GRENADE!!", "Get down!", "Is that a grenade?!", "RUN!!"],
   freeze: ["What's that ray gun?!", "Don't freeze me!", "Is that a freeze ray?!"],
   laser: ["Is that a laser sword?!", "Whoa, it's glowing!", "Don't slice me with that!"],
@@ -1134,7 +1147,7 @@ function isAimedAt(npc) {
   const to = V(npc.pos.x, npc.pos.y + 3.5, npc.pos.z).sub(camera.position), d = to.length();
   return d < 45 && to.normalize().dot(camDir()) > 0.985;
 }
-const THREAT = ["fists", "gun", "knife", "sword", "bat", "burger", "grab", "chainsaw", "axe", "hammer", "flame", "rocket", "thanks", "gun", "grenade", "freeze", "laser"];
+const THREAT = ["fists", "gun", "knife", "sword", "bat", "burger", "grab", "chainsaw", "axe", "hammer", "flame", "rocket", "thanks", "gun", "grenade", "freeze", "laser", "heliumtank"];
 const bubblesEl = document.getElementById("bubbles");
 function say(who, kind, dur = 2.4) {
   const p = who.person || who; if (!p || !p.alive || p.isPlayer) return;
@@ -1403,6 +1416,7 @@ function hitPart(rd, k, vel, cutChance, kind) {
   if (rd.person && rd.person.frozen > 0) { shatter(rd); return 40; }
   pushRagdoll(rd, LIMB_PTS[k], vel);
   const pos = limbCenter(rd, k), p = rd.person, I = p ? p.inj[k] : {};
+  if (p && p.balloon && (p.balloon.phase === "fill" || p.balloon.phase === "rise") && (kind === "gun" || kind === "knife" || kind === "sword" || kind === "laser" || kind === "chainsaw" || kind === "blast" || kind === "axe")) { popup("💥 POP!", pos.clone().setY(pos.y + 2), "#ff4081"); sfx.bang(); popBalloon(p); }
   focusOn(p);
   const sharp = kind === "gun" || kind === "knife" || kind === "sword" || kind === "mega" || kind === "axe" || kind === "chainsaw" || kind === "blast" || kind === "laser", blunt = kind === "bat" || kind === "punch" || kind === "hammer";
   const minL = kind === "sword" || kind === "axe" || kind === "chainsaw" || kind === "laser" ? 1 : 0, L = Math.max(save.gore[k], minL);
@@ -1605,7 +1619,17 @@ function die(p, cause) {
 }
 // a body part slams the ground hard: bones break, skulls crack
 function impact(rd, i, speed) {
-  const p = rd.person; if (!p || speed < 22) return;
+  const p = rd.person; if (!p) return;
+  if (p.heliumFall && speed > 12) {
+    p.heliumFall = false;
+    const pos = rd.pts[i].clone();
+    goreBurst("torso", pos, V(0, 6, 0), rd.skin); splat(pos.x, pos.z, 2.2, pos.y); sfx.splat(); shake = Math.max(shake, 0.3);
+    if (p.balloon) { p.balloon = null; balloons.delete(p); }
+    popup("SPLAT!", pos.clone().setY(pos.y + 2), "#ff4444");
+    if (p.alive) { if (!p.isPlayer) earn(40, pos, false); die(p, "fell from the sky after farting out all the helium"); }
+    return;
+  }
+  if (speed < 22) return;
   if (p.frozen > 0 && !p.gold) { shatter(rd); return; }
   const k = PT_LIMB[i], I = p.inj[k], now = performance.now();
   if (I.missing || now - (rd.ic[k] || 0) < 400) return;
@@ -1777,16 +1801,16 @@ function newTarget(npc) {
   npc.target = npc.pos.clone().add(V(rand(-5, 5), 0, rand(-5, 5)));
 }
 function panic(n, from, kind, chance = 0.5) {
-  if (n.state === "dummy") return;
+  if (n.state === "dummy" || n.state === "inflating") return;
   setFace(n.char, true); n.state = "flee"; n.timer = rand(4, 7); n.fleeFrom = from.clone(); n.char.pose = null; n.cool = 3;
   if (kind && Math.random() < chance) say(n, kind, 2);
 }
 function startFight(n) {
-  if (n.state === "dummy" || !player.person.alive) return;
+  if (n.state === "dummy" || n.state === "inflating" || !player.person.alive) return;
   if (n.state !== "fight") { n.state = "fight"; n.atkCD = rand(0.3, 0.8); n.char.pose = null; setFace(n.char, false); n.fightT = 0; }
 }
 function reactTo(w, pos) {
-  if (w.state === "dummy" || w.state === "fight") return;
+  if (w.state === "dummy" || w.state === "fight" || w.state === "inflating") return;
   if (w.fighter && player.person.alive) { startFight(w); if (Math.random() < 0.6) say(w, "fight"); }
   else if (w.state !== "flee" && Math.random() < 0.7) panic(w, pos, "witness");
 }
@@ -1820,6 +1844,7 @@ function updateNPCs(dt) {
       continue;
     }
     if (npc.state === "frozen" || npc.state === "statue") { c.group.position.copy(npc.pos); continue; }
+    if (npc.state === "inflating") { c.pose = "hands"; c.moving = false; c.group.position.copy(npc.pos); c.group.rotation.y = npc.heading; animChar(c, dt); continue; }
     const d = npc.pos.distanceTo(player.pos);
     npc.cool -= dt; npc.hiCD -= dt; npc.atkCD -= dt;
     if (pActive && w > 0 && w !== 12 && d < 22 && npc.state === "walk" && npc.cool <= 0) {
@@ -1923,8 +1948,8 @@ function buildPlayerChar() {
 }
 let money = save.money, combo = 0, comboT = 0, shake = 0;
 const crossEl = document.getElementById("cross");
-const AIM_TOOLS = [1, 5, 6, 10, 11, 13, 14, 15];
-const TOOL_ICONS = ["👊", "🔫", "🔪", "⚔️", "🏏", "🍔", "✋", "🪚", "🪓", "🔨", "🔥", "🚀", "🩹", "💥", "💣", "❄️", "🗡️"];
+const AIM_TOOLS = [1, 5, 6, 10, 11, 13, 14, 15, 17];
+const TOOL_ICONS = ["👊", "🔫", "🔪", "⚔️", "🏏", "🍔", "✋", "🪚", "🪓", "🔨", "🔥", "🚀", "🩹", "💥", "💣", "❄️", "🗡️", "🎈"];
 function setWeapon(w) {
   if (player.grab) releaseGrab(false);
   player.weapon = w;
@@ -2470,7 +2495,7 @@ function clearWorldPeople() {
   burgers.forEach(b => scene.remove(b.m)); burgers.length = 0;
   fires.forEach(f => scene.remove(f.m)); fires.length = 0;
   rockets.forEach(r => scene.remove(r.m)); rockets.length = 0;
-  grenades.forEach(g => scene.remove(g.m)); grenades.length = 0;
+  grenades.forEach(g => scene.remove(g.m)); grenades.length = 0; balloons.clear();
   focus = null; player.grab = null; player.inPool = null;
 }
 function enterLab() {
@@ -2601,6 +2626,76 @@ function freezeBeam() {
   setTimeout(() => { scene.remove(line); geo.dispose(); }, 70);
   spawnFire(end, V(rand(-2, 2), rand(1, 3), rand(-2, 2)), 0.3, 0.4, false, ICE_MAT);
   if (every("freezesnd", 130)) osc({ f: rand(1400, 1800), f2: 900, dur: 0.12, vol: 0.05 });
+}
+// ---- helium canister: inflate, float up, fart out the gas, fall ----
+const balloons = new Set();
+const gasMat = new THREE.MeshBasicMaterial({ color: 0x9ccc65, transparent: true, opacity: 0.45, depthWrite: false });
+function strapHelium(p) {
+  if (!p || !p.alive || p.balloon || p.gold || p.isPlayer) return false;
+  const parts = partsOf(p); if (!parts) return false;
+  const can = new THREE.Group();
+  can.add(mesh(CY(0.22, 0.22, 1.0), M(0xb0bec5))); can.add(mesh(CY(0.23, 0.23, 0.16), M(0xff4081), 0, 0.25, 0, false));
+  can.add(mesh(CY(0.1, 0.1, 0.3), M(0x455a64), 0, 0.62, 0));
+  can.rotation.x = Math.PI / 2; can.position.set(0, -0.2, 1.25); can.userData.deco = true; parts.head.add(can);
+  const bal = new THREE.Mesh(FAT_SPH, M(p.look.shirt)); bal.scale.setScalar(0.3); bal.position.set(0, -0.3, 0.25); bal.castShadow = true; parts.ut.add(bal);
+  p.balloon = { t: 0, phase: "fill", can, bal, thrust: V() };
+  balloons.add(p);
+  if (p.npc) { p.npc.state = "inflating"; p.npc.char.pose = "hands"; setFace(p.npc.char, true); }
+  say(p, "helmouth", 2.5); focusOn(p); sfx.hiss();
+  earn(20, headPos(p) || player.pos, false);
+  return true;
+}
+function popBalloon(p) {
+  const b = p.balloon; if (!b || b.phase === "deflate" || b.phase === "fall") return;
+  if (b.can.parent) b.can.parent.remove(b.can);
+  if (p.npc) knockDown(p.npc, V(0, 4, 0), true);
+  b.phase = "deflate"; b.t = 0;
+  b.thrust.set(rand(-1, 1), rand(0.1, 0.7), rand(-1, 1)).normalize();
+  sfx.fart(); say(p, "fart", 1.8);
+  popup("💨 PFFFFFT!", headPos(p) || player.pos, "#9ccc65");
+  p.heliumFall = true;
+}
+function updateBalloons(dt) {
+  for (const p of [...balloons]) {
+    const b = p.balloon; if (!b) { balloons.delete(p); continue; }
+    b.t += dt;
+    const rd = p.rd;
+    if (b.phase === "fill") {
+      const s = 0.3 + Math.min(1, b.t / 2.5) * 2.0; b.bal.scale.set(s * 1.05, s, s * 1.1);
+      if (every("hiss", 320)) sfx.hiss();
+      if (b.t >= 2.5) { if (p.npc) knockDown(p.npc, V(0, 3, 0), true); b.phase = "rise"; b.t = 0; say(p, "helium", 2); }
+    } else if (b.phase === "rise") {
+      if (rd) {
+        const target = (rd.pts[1].y < 30 ? 9 : 0.8) * RAG_H;
+        for (let i = 0; i < rd.pts.length; i++) { const cur = rd.pts[i].y - rd.prev[i].y; rd.prev[i].y = rd.pts[i].y - (cur + (target - cur) * 0.5); }
+        rd.sleep = false; rd.still = 0;
+      }
+      if (Math.random() < dt * 0.6) say(p, "helium", 1.8);
+      if (b.t > 4.5) popBalloon(p);
+    } else if (b.phase === "deflate") {
+      const s = Math.max(0.05, 2.3 * (1 - b.t / 1.0)); b.bal.scale.setScalar(s);
+      if (rd) {
+        b.thrust.applyAxisAngle(V(0, 1, 0), dt * 9);   // zooms around like a let-go balloon
+        for (let i = 0; i < rd.pts.length; i++) rd.prev[i].addScaledVector(b.thrust, -32 * dt * RAG_H);
+        rd.sleep = false;
+        const c = limbCenter(rd, "torso");
+        for (let i = 0; i < 2; i++) spawnFire(c, V(rand(-2, 2), rand(-2, 1), rand(-2, 2)).addScaledVector(b.thrust, -6), 1.3, 1.0, false, gasMat);
+      }
+      if (b.t > 1.0) { if (b.bal.parent) b.bal.parent.remove(b.bal); b.phase = "fall"; b.t = 0; }
+    } else if (b.phase === "fall") {
+      if (b.t > 8) { if (p.alive && rd) die(p, "fell from the sky after farting out all the helium"); p.balloon = null; p.heliumFall = false; balloons.delete(p); }
+    }
+  }
+}
+function heliumTool() {
+  player.char.slash = player.char.slashDur = 0.3;
+  ray.setFromCamera({ x: 0, y: 0 }, camera); ray.far = 30;
+  const hit = ray.intersectObjects(rayTargets(), true).find(h => h.point.distanceTo(player.pos) < 14);
+  let r = hit ? resolveHit(hit) : null;
+  if (!r) { const t = meleeTargets(7, 0.2, 1)[0]; if (t) r = t.npc ? { npc: t.npc } : { rd: t.rd }; }
+  if (!r) { popup("Aim at someone!", player.pos.clone().setY(player.pos.y + 3), "#fff"); return; }
+  const p = r.npc ? r.npc.person : r.rd.person;
+  if (!strapHelium(p)) popup(p && !p.alive ? "They're already dead..." : "Can't use that on them", player.pos.clone().setY(player.pos.y + 3), "#fff");
 }
 // ---- medkit: heal yourself (click) or someone else (right-click) ----
 function clearDeco(parts) {
@@ -2748,6 +2843,7 @@ function useTool() {
   else if (w === 14) { throwGrenade(); player.cd = 0.9; }
   else if (w === 15) { freezeBeam(); player.cd = 0.07; }
   else if (w === 16) { swing("laser"); player.cd = 0.35; }
+  else if (w === 17) { heliumTool(); player.cd = 1.0; }
 }
 // ---- getting hurt / ragdolling / dying ----
 function npcShoot(npc) {
@@ -2884,7 +2980,7 @@ addEventListener("keydown", e => {
   if (e.code === "Escape" && shopOpen) { openMenu(null); return; }
   if (shopOpen) return;
   keys[e.code] = true;
-  const n = +e.key; if (e.code === "KeyK") setWeapon(12); else if (e.code === "KeyZ") setWeapon(13); else if (e.code === "KeyX") setWeapon(14); else if (e.code === "KeyN") setWeapon(15); else if (e.code === "KeyV") setWeapon(16); else if (e.key === "0") setWeapon(9); else if (e.key === "-") setWeapon(10); else if (e.key === "=") setWeapon(11); else if (n >= 1 && n <= 9) setWeapon(n - 1);
+  const n = +e.key; if (e.code === "KeyK") setWeapon(12); else if (e.code === "KeyZ") setWeapon(13); else if (e.code === "KeyX") setWeapon(14); else if (e.code === "KeyN") setWeapon(15); else if (e.code === "KeyV") setWeapon(16); else if (e.code === "KeyJ") setWeapon(17); else if (e.key === "0") setWeapon(9); else if (e.key === "-") setWeapon(10); else if (e.key === "=") setWeapon(11); else if (n >= 1 && n <= 9) setWeapon(n - 1);
   if (e.code === "KeyR" && !e.repeat) toggleRagdoll();
   if (e.code === "KeyF" && !e.repeat) toggleFP();
   if (e.code === "KeyC") cleanUp();
@@ -2930,6 +3026,7 @@ function cleanUp() {
   splats.forEach(s => scene.remove(s)); splats.length = 0;
   ropes.forEach(r => r.meshes.forEach(m => scene.remove(m))); ropes.length = 0;
   burgers.forEach(b => scene.remove(b.m)); burgers.length = 0;
+  for (const bp of [...balloons]) if (!bp.npc) { bp.balloon = null; balloons.delete(bp); }
   popup("All clean!", player.pos, "#fff");
 }
 
@@ -2974,7 +3071,7 @@ const MENUS = {
     ["🌳 Park", "The park in the middle of town", () => teleport(V(28 + rand(-6, 6), 0.3, 28 + rand(-6, 6)))],
     ["🛣️ Busy Street", "Somewhere with lots of people", () => { let best = null, bc = -1; for (const n of npcs) { const c = npcs.filter(m => m.pos.distanceTo(n.pos) < 20).length; if (c > bc && n.pos.y < 1) { bc = c; best = n; } } const p = best ? best.pos.clone().add(V(4, 0, 4)) : V(4, 0, 4); collide(p, 1.1); teleport(p); }],
     ["🏠 Back to Start", "Where you first spawned in the city", () => teleport(V(4, 0, 4))],
-    ["🧪 Pool Lab", "20 pools: milk, acid, lava, honey, gravy, slime, water, ice, oil, soda, chocolate, electric, piranhas, nitrogen, gold, blood, shark, helium, paint, black hole", () => enterLab()]
+    ["🧪 Pool Lab", "19 pools: milk, acid, lava, honey, gravy, slime, water, ice, oil, soda, chocolate, electric, piranhas, nitrogen, gold, blood, shark, paint, black hole", () => enterLab()]
   ] },
   spawn: { title: "➕ Spawn", items: [
     ["🧍 Dummy", "A grey dummy that just stands there", () => spawnFront(1, true)],
@@ -3354,7 +3451,7 @@ function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
   if (!shopOpen) {
     updatePlayer(dt); updatePlayerHealth(dt); updateNPCs(dt); updateRagdolls(dt); updatePersons(dt); updateGore(dt); updateBurgers(dt);
-    updatePools(dt); updateBurning(dt); updateFires(dt); updateRockets(dt); updateGrenades(dt); updateFrozen(dt);
+    updatePools(dt); updateBurning(dt); updateFires(dt); updateRockets(dt); updateGrenades(dt); updateFrozen(dt); updateBalloons(dt);
     spawnT -= dt; if (npcs.filter(n => !n.spawned).length < (mode === "lab" ? 12 : 40) && spawnT <= 0) { spawnNPC(player.pos); spawnT = 0.6; }
     comboT -= dt;
   }
