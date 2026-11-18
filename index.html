@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Blocky Smash City</title>
 <style>
   * { box-sizing: border-box; }
@@ -28,7 +29,23 @@
   #cross::after { top: 10px; left: 0; height: 2px; width: 22px; }
   #modeBanner { position: absolute; top: 52px; left: 50%; transform: translateX(-50%); background: rgba(0,140,170,.85); color: #fff; padding: 5px 14px; border-radius: 8px; font-size: 14px; font-weight: bold; display: none; white-space: nowrap; border: 2px solid #000; }
   #lockHint { position: absolute; bottom: 92px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.6); color: #fff; padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: bold; display: none; white-space: nowrap; }
-  #hotbar { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; pointer-events: auto; }
+  #hotbar { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; pointer-events: auto; max-width: 96vw; overflow-x: auto; scrollbar-width: none; }
+  .slot { flex: 0 0 auto; }
+  html, body { overscroll-behavior: none; -webkit-touch-callout: none; }
+  canvas { touch-action: none; }
+  #touchUI { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 6; }
+  body.touch #touchUI { display: block; }
+  body.touch #touchUI.hidden { display: none; }
+  .tbtn { position: absolute; pointer-events: auto; border-radius: 50%; border: 4px solid rgba(0,0,0,.55); background: rgba(255,255,255,.28); color: #fff; font-size: 38px; display: flex; align-items: center; justify-content: center; touch-action: none; -webkit-user-select: none; user-select: none; padding: 0; text-shadow: 0 2px 3px #000; }
+  .tbtn:active, .tbtn.down { background: rgba(255,255,255,.5); }
+  #tUse { right: 26px; bottom: 112px; width: 104px; height: 104px; background: rgba(255,70,70,.45); }
+  #tJump { right: 146px; bottom: 92px; width: 78px; height: 78px; font-size: 30px; }
+  #tAlt { right: 34px; bottom: 236px; width: 74px; height: 74px; display: none; background: rgba(80,255,120,.4); font-size: 32px; }
+  #joyBase { position: absolute; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%; background: rgba(255,255,255,.16); border: 3px solid rgba(255,255,255,.55); display: none; }
+  #joyKnob { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; background: rgba(255,255,255,.75); }
+  #joyHint { position: absolute; left: 24px; bottom: 96px; color: rgba(255,255,255,.85); font-weight: bold; font-size: 15px; text-shadow: 0 1px 3px #000; }
+  body.touch #help, body.touch #lockHint { display: none !important; }
+  body.touch #vitals { bottom: auto; top: 64px; right: 118px; }
   .slot { width: 54px; height: 58px; background: rgba(0,0,0,.5); border: 3px solid rgba(255,255,255,.35); border-radius: 8px; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; cursor: pointer; text-align: center; }
   .slot b { font-size: 11px; opacity: .7; }
   .slot.on { border-color: #fff; background: rgba(40,120,255,.6); }
@@ -38,19 +55,25 @@
   .tag.hurt { color: #ffb347; } .tag.dead { color: #ff4c4c; } .tag.fighter { color: #ff8a8a; }
   .pop { position: absolute; transform: translate(-50%, -50%); color: #5dff6a; font-weight: bold; font-size: 26px; text-shadow: 2px 2px 0 #000, -1px -1px 0 #000; white-space: nowrap; }
   /* small stats panel */
-  #vitals { position: absolute; right: 12px; bottom: 84px; width: 250px; background: rgba(12,14,24,.88); border: 3px solid #000; border-radius: 12px; color: #fff; padding: 8px 10px; display: none; font-size: 12px; pointer-events: auto; }
-  #vitals .vhead { display: flex; align-items: center; gap: 6px; font-size: 17px; font-weight: bold; }
+  #bodyHud { position: absolute; right: 12px; bottom: 84px; width: 96px; background: rgba(0,0,0,.55); border: 2px solid #000; border-radius: 10px; padding: 3px 4px 4px; text-align: center; color: #fff; font-size: 10px; font-weight: bold; }
+  body.touch #bodyHud { bottom: auto; top: 12px; }
+  #bodyStatus { color: #ff6b6b; font-size: 10px; line-height: 1.25; margin-bottom: 2px; }
+  #bodyStatus div { background: rgba(120,0,0,.55); border-radius: 4px; padding: 1px 2px; margin-bottom: 2px; }
+  #bodyStatus .air { color: #8fd8ff; background: rgba(0,60,120,.55); }
+  #bodyStatus .fat { color: #ffd54f; background: rgba(110,70,0,.6); }
+  #vitals { position: absolute; right: 118px; bottom: 84px; width: 196px; background: rgba(12,14,24,.88); border: 3px solid #000; border-radius: 12px; color: #fff; padding: 6px 8px; display: none; font-size: 11px; pointer-events: auto; }
+  #vitals .vhead { display: flex; align-items: center; gap: 5px; font-size: 14px; font-weight: bold; }
   #vName { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #vState { font-size: 11px; padding: 2px 6px; border-radius: 6px; background: #3a3; }
   #vState.dying { background: #e80; } #vState.dead { background: #c22; } #vState.down { background: #cc3; color: #000; }
   #vClose { background: #c22; color: #fff; border: 2px solid #000; border-radius: 6px; width: 22px; height: 22px; line-height: 16px; font-weight: bold; cursor: pointer; padding: 0; font-size: 15px; }
-  #vDie { font-weight: bold; color: #ffd84a; margin: 3px 0 4px; font-size: 13px; }
+  #vDie { font-weight: bold; color: #ffd84a; margin: 2px 0 3px; font-size: 11px; }
   .vrow { display: flex; justify-content: space-between; margin-top: 3px; }
   .bar { height: 8px; background: #333; border-radius: 4px; overflow: hidden; border: 1px solid #000; }
   #vBloodBar { height: 100%; background: #d11; width: 100%; transition: width .2s; }
-  #ecg { display: block; width: 100%; height: 30px; background: #061206; border-radius: 5px; margin-top: 2px; }
+  #ecg { display: block; width: 100%; height: 22px; background: #061206; border-radius: 5px; margin-top: 2px; }
   .vbody { display: flex; gap: 6px; margin-top: 6px; align-items: flex-start; }
-  #vInj { flex: 1; font-size: 11px; line-height: 1.4; }
+  #vInj { flex: 1; font-size: 10px; line-height: 1.35; }
   #vInj .bad { color: #ff6b6b; font-weight: bold; } #vInj .mid { color: #ffb347; font-weight: bold; }
   /* modal lists (shop / teleport / spawn) */
   #shop { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 10; }
@@ -138,8 +161,13 @@
     <div class="slot" data-w="10"><b>-</b>🔥<br>Flame</div>
     <div class="slot" data-w="11"><b>=</b>🚀<br>Rocket</div>
     <div class="slot" data-w="12"><b>K</b>🩹<br>Medkit</div>
+    <div class="slot" data-w="13"><b>Z</b>💥<br>Shotgun</div>
+    <div class="slot" data-w="14"><b>X</b>💣<br>Grenade</div>
+    <div class="slot" data-w="15"><b>N</b>❄️<br>Freeze</div>
+    <div class="slot" data-w="16"><b>V</b>🗡️<br>Laser</div>
   </div>
   <div id="bubbles"></div>
+  <div id="bodyHud" title="Your body"><div id="bodyStatus"></div><div id="bodyLbl">YOU</div><div id="bodySvg"></div></div>
   <div id="vitals">
     <div class="vhead"><span id="vName">Jimmy</span><span id="vState">ALIVE</span><button id="vClose" title="Close">×</button></div>
     <div id="vDie"></div>
@@ -150,6 +178,13 @@
     <div class="vrow" id="vBurgRow"><span>🍔 Burgers eaten</span><b id="vBurg">0/100</b></div>
     <div class="vbody"><div id="skel"></div><div id="vInj"></div></div>
   </div>
+</div>
+<div id="touchUI">
+  <div id="joyBase"><div id="joyKnob"></div></div>
+  <div id="joyHint">⬅ Touch here to move · swipe right side to look ➡</div>
+  <button class="tbtn" id="tAlt">🍔</button>
+  <button class="tbtn" id="tJump">⤒</button>
+  <button class="tbtn" id="tUse">👊</button>
 </div>
 <div id="shop"><div class="panel">
   <h2 id="menuTitle">🛒 Gore Shop</h2>
@@ -162,7 +197,7 @@
   <h1>BLOCKY<br><span>SMASH CITY</span></h1>
   <div class="mpanel on" id="mpHome">
     <button class="mbtn play" id="playBtn">▶ PLAY</button>
-    <button class="mbtn" id="labBtn" style="background:#00acc1">🧪 POOL LAB <small style="font-size:13px">(12 pools)</small></button>
+    <button class="mbtn" id="labBtn" style="background:#00acc1">🧪 POOL LAB <small style="font-size:13px">(16 pools)</small></button>
     <button class="mbtn" data-go="mpAvatar">👕 AVATAR EDITOR</button>
     <button class="mbtn" data-go="mpSettings">⚙️ SETTINGS</button>
     <button class="mbtn" data-go="mpControls">🎮 CONTROLS</button>
@@ -187,6 +222,8 @@
       <kbd>8</kbd> Chainsaw (hold) <kbd>9</kbd> Axe <kbd>0</kbd> Hammer<br>
       <kbd>-</kbd> Flamethrower (hold) <kbd>=</kbd> Rocket launcher<br>
       <kbd>K</kbd> Medkit — click heals you, right-click heals someone<br>
+      <kbd>Z</kbd> Shotgun <kbd>X</kbd> Grenade <kbd>N</kbd> Freeze ray (hold) <kbd>V</kbd> Laser sword<br>
+      <b>iPad:</b> left side = joystick, swipe right side = look, big buttons = use / jump<br>
       <b>Right-click</b> with the burger to eat it yourself (100 = 💥)<br>
       <kbd>R</kbd> ragdoll yourself / get up<br>
       <kbd>F</kbd> first person · <kbd>Q</kbd>/<kbd>E</kbd> turn camera<br>
@@ -247,11 +284,11 @@ save.settings = Object.assign({}, DEFAULT_SETTINGS, save.settings);
 save.look = Object.assign({}, DEFAULT_LOOK, save.look || {});
 const S = save.settings;
 if (!save.fatMax) save.fatMax = 1;
-const FAT_TIERS = [1, 1.5, 2, 3], FAT_COSTS = [500, 1500, 4000];
-if (save.fatMax > 3) save.fatMax = 3;
-if (save.look && save.look.fat > 3) save.look.fat = 3;
+const FAT_TIERS = [1, 1.5, 2, 3, 4, 5, 6], FAT_COSTS = [500, 1500, 4000, 8000, 15000, 25000];
+if (save.fatMax > 6) save.fatMax = 6;
+if (save.look && save.look.fat > 6) save.look.fat = 6;
 function persist() { try { localStorage.setItem("blockySmashSave3", JSON.stringify(save)); } catch (e) {} }
-const GAME_VERSION = "1.9.0";
+const GAME_VERSION = "2.1.0";
 let mode = "city";   // "city" or "lab" (Pool Lab)
 
 // ================= renderer / sky / post shader =================
@@ -304,9 +341,6 @@ const postMat = new THREE.ShaderMaterial({
       uv += vec2(sin(uv.y * 40.0 + time * 50.0), 0.0) * aberr * 0.004;
       vec2 off = d * (0.002 + aberr * 0.025);
       vec3 col = vec3(texture2D(tDiffuse, uv + off).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - off).b);
-      vec3 glow = vec3(0.0);
-      for (int i = 0; i < 8; i++) { float a = float(i) * 0.785; glow += max(texture2D(tDiffuse, uv + vec2(cos(a), sin(a)) * 0.007).rgb - 0.72, 0.0); }
-      col += glow * 0.22;
       float l = dot(col, vec3(0.299, 0.587, 0.114));
       col = mix(vec3(l), col, 1.18);
       col = (col - 0.5) * 1.07 + 0.5;
@@ -395,7 +429,7 @@ const buildings = [], blocks = [], solidMeshes = [];
   }
 }
 // ================= POOL LAB =================
-const LAB = { x: 0, z: 1000, half: 90 };
+const LAB = { x: 0, z: 1000, half: 112 };
 const POOL_TYPES = {
   milk:  { name: "MILK",  icon: "🥛", color: 0xf6f4ec, op: 0.93, emissive: 0x000000, buoy: 37, drag: 1.5, slow: 0.65 },
   acid:  { name: "ACID",  icon: "☢️", color: 0x7dff3a, op: 0.72, emissive: 0x2a7a00, buoy: 30, drag: 2, slow: 0.7 },
@@ -408,7 +442,11 @@ const POOL_TYPES = {
   oil:   { name: "OIL", icon: "🛢️", color: 0x1a1a14, op: 0.95, emissive: 0x000000, buoy: 33, drag: 1.8, slow: 0.5 },
   soda:  { name: "SODA", icon: "🥤", color: 0x5a2e0c, op: 0.85, emissive: 0x000000, buoy: 40, drag: 1, slow: 0.6, fizzy: true },
   choc:  { name: "CHOCOLATE", icon: "🍫", color: 0x4a2612, op: 0.95, emissive: 0x000000, buoy: 35, drag: 3, slow: 0.45 },
-  zap:   { name: "ELECTRIC", icon: "⚡", color: 0x3cf0ff, op: 0.6, emissive: 0x0a6a80, buoy: 34, drag: 1.5, slow: 0.5 }
+  zap:   { name: "ELECTRIC", icon: "⚡", color: 0x3cf0ff, op: 0.6, emissive: 0x0a6a80, buoy: 34, drag: 1.5, slow: 0.5 },
+  piranha: { name: "PIRANHAS", icon: "🐟", color: 0x2a7fbf, op: 0.6, emissive: 0x000000, buoy: 36, drag: 1.4, slow: 0.6 },
+  nitro: { name: "NITROGEN", icon: "🧪", color: 0xdfe9ff, op: 0.5, emissive: 0x223344, buoy: 33, drag: 2, slow: 0.4 },
+  gold:  { name: "GOLD", icon: "🪙", color: 0xffc83a, op: 0.96, emissive: 0x3a2600, buoy: 28, drag: 4, slow: 0.3 },
+  blood: { name: "BLOOD", icon: "🩸", color: 0x8a0000, op: 0.95, emissive: 0x000000, buoy: 35, drag: 1.6, slow: 0.6 }
 };
 const pools = [];
 {
@@ -426,7 +464,7 @@ const pools = [];
   }
   const keys = Object.keys(POOL_TYPES);
   keys.forEach((k, i) => {
-    const T = POOL_TYPES[k], cx = L.x + (i % 4 - 1.5) * 40, cz = L.z + (Math.floor(i / 4) - 1) * 45 - 5, dir = 1;
+    const T = POOL_TYPES[k], cx = L.x + (i % 4 - 1.5) * 40, cz = L.z + (Math.floor(i / 4) - 1.5) * 45 - 5, dir = 1;
     const pool = { type: k, T, cx, cz, surf: FL + SURF, minX: cx - H + 1, maxX: cx + H - 1, minZ: cz - H + 1, maxZ: cz + H - 1 };
     for (const [x, z, w, d] of [[0, H - 0.5, H * 2, 1], [0, -H + 0.5, H * 2, 1], [H - 0.5, 0, 1, H * 2 - 2], [-H + 0.5, 0, 1, H * 2 - 2]]) {
       const r = mesh(B(w, RIM, d), M(0xf3f3f3), cx + x, FL + RIM / 2, cz + z); r.receiveShadow = true; scene.add(r); solidMeshes.push(r);
@@ -451,7 +489,8 @@ const pools = [];
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(8, 3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc) }));
     sign.position.set(cx, FL + RIM + 4.5, cz - dir * (H - 0.5)); if (dir < 0) sign.rotation.y = Math.PI; scene.add(sign);
     for (const px of [-3.6, 3.6]) scene.add(mesh(B(0.3, RIM + 3.5, 0.3), M(0x777777), cx + px, FL + RIM + 1.5, cz - dir * (H - 0.5)));
-    if (T.emissive) { const pl = new THREE.PointLight(T.color, 1.2, 28); pl.position.set(cx, FL + SURF + 2, cz); scene.add(pl); }
+    if (T.emissive && (k === "lava" || k === "acid")) { const pl = new THREE.PointLight(T.color, 1.0, 26); pl.position.set(cx, FL + SURF + 2, cz); scene.add(pl); }
+    if (k === "piranha") { pool.fish = []; for (let f = 0; f < 9; f++) { const fm = new THREE.Group(); fm.add(mesh(B(0.35, 0.3, 0.8), M(f % 2 ? 0xd84315 : 0x9e9e9e), 0, 0, 0, false)); fm.add(mesh(B(0.06, 0.3, 0.3), M(0x555555), 0, 0, -0.5, false)); scene.add(fm); pool.fish.push({ m: fm, a: rand(0, 6.28), r: rand(1.5, 5.5), s: rand(1.2, 2.5) * (f % 2 ? 1 : -1), y: rand(0.8, 2.4) }); } }
     pools.push(pool);
   });
 }
@@ -485,7 +524,7 @@ function freeSpot(from, minDist) {
     if (collide(p.clone(), 1.5)) continue;
     return p;
   }
-  return mode === "lab" ? V(LAB.x + rand(-20, 20), 0.3, LAB.z + 75) : V(10, 0, 10);
+  return mode === "lab" ? V(LAB.x + rand(-20, 20), 0.3, LAB.z + 100) : V(10, 0, 10);
 }
 
 // ================= faces =================
@@ -600,8 +639,9 @@ const BODY_MAT = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE
 const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const _cA = new THREE.Color();
 function bodyGeo(f, shirtHex, skinHex) {
-  const prof = [[0.001, -0.86 - f * 0.45], [0.72 + f * 0.12, -0.82 - f * 0.45], [0.93 + f * 0.2, -0.62 - f * 0.38], [1.03 + f * 0.3, -0.3 - f * 0.15],
-    [1.13 + f * 0.16, 0.18], [1.14 + f * 0.2, 0.52], [0.92 + f * 0.16, 0.72], [0.001, 0.74]];
+  const fw = Math.min(f, 2);
+  const prof = [[0.001, -0.86 - f * 0.45], [0.72 + fw * 0.12, -0.82 - f * 0.45], [0.93 + fw * 0.2, -0.62 - f * 0.38], [1.03 + fw * 0.3, -0.3 - f * 0.15],
+    [1.13 + fw * 0.16, 0.18], [1.14 + fw * 0.2, 0.52], [0.92 + fw * 0.16, 0.72], [0.001, 0.74]];
   const curve = new THREE.SplineCurve(prof.map(([r, y]) => new THREE.Vector2(r, y)));
   // phiStart = PI puts the lathe seam at the back so the belly is perfectly smooth
   const geo = new THREE.LatheGeometry(curve.getPoints(40).map(v => new THREE.Vector2(Math.max(0.001, v.x), v.y)), 48, Math.PI);
@@ -658,8 +698,9 @@ function addFatBits(c, o) {
   c.shirtHex = o.shirt; c.skinHex = o.skin;
 }
 function setCharFat(c, f) {
-  f = clamp(f || 0, 0, 3); c.fat = f;
+  f = clamp(f || 0, 0, 6); c.fat = f;
   if (f > 1) f = 1 + (f - 1) * 0.65;   // very big sizes grow more gently so nothing looks stretched
+  const fBody = f; f = Math.min(f, 2);   // arms/legs/hips stop getting wider; past this only the belly grows (forwards + down)
   const P = c.parts, F = c.fatBits, sc = (m, x, y, z) => m.scale.set(x, y, z);
   const round = f > 0.12;
   for (const k in F) F[k].visible = f > 0.02;
@@ -671,20 +712,21 @@ function setCharFat(c, f) {
   for (const m of [F.thighL, F.thighR, F.calfL, F.calfR, F.ankleL, F.ankleR]) m.visible = round;
   for (const m of c.legBoxes) m.visible = !round;
   for (const m of c.shoes) m.scale.set(1 + f * 0.25, 1, 1 + f * 0.15);
-  if (round) { F.body.geometry.dispose(); F.body.geometry = bodyGeo(f, c.shirtHex, c.skinHex); F.body.position.z = f * 0.06; }
-  P.lt.scale.set(1 + f * 0.2, 1, 1 + f * 0.25);
+  if (round) { F.body.geometry.dispose(); F.body.geometry = bodyGeo(fBody, c.shirtHex, c.skinHex); F.body.position.z = fBody * 0.06; }
+  const hf = Math.min(f, 1.8);   // hips/waist stop spreading sideways on huge sizes; the belly takes the rest
+  P.lt.scale.set(1 + hf * 0.2, 1, 1 + hf * 0.25);
   for (const m of [F.upL, F.upR]) sc(m, 0.55 + f * 0.22, 0.68 + f * 0.08, 0.55 + f * 0.22);
   for (const m of [F.foreL, F.foreR]) sc(m, 0.42 + f * 0.16, 0.56 + f * 0.06, 0.42 + f * 0.16);
   for (const [m, sx] of [[F.shoulderL, 1], [F.shoulderR, -1]]) { sc(m, 0.5 + f * 0.22, 0.48 + f * 0.14, 0.5 + f * 0.2); m.position.set(sx * (1.2 + f * 0.36), 0.48, 0); }
-  sc(F.hips, 1.0 + f * 0.4, 0.45 + f * 0.12, 0.6 + f * 0.3);
+  sc(F.hips, 1.0 + hf * 0.4, 0.45 + hf * 0.12, 0.6 + hf * 0.3);
   for (const m of [F.handL, F.handR]) sc(m, 0.36 + f * 0.08, 0.2 + f * 0.03, 0.38 + f * 0.08);
   for (const m of [F.thighL, F.thighR]) sc(m, 0.6 + f * 0.32, 0.64 + f * 0.06, 0.6 + f * 0.3);
   for (const m of [F.calfL, F.calfR]) sc(m, 0.48 + f * 0.2, 0.52 + f * 0.04, 0.5 + f * 0.2);
   for (const m of [F.ankleL, F.ankleR]) sc(m, 0.42 + f * 0.17, 0.28, 0.45 + f * 0.17);
   P.head.scale.setScalar(1 + Math.min(f, 2) * 0.08);
   c.neckMesh.scale.set(1 + f * 0.45, 1, 1 + f * 0.45);
-  sc(F.muffin, 0.72 + f * 0.1, 0.3 + f * 0.12, 0.6 + f * 0.3);
-  for (const [m, sx] of [[F.butt, 1], [F.buttR, -1]]) { sc(m, 0.45 + f * 0.15, 0.35 + f * 0.14, 0.22 + f * 0.27); m.position.x = sx * (0.33 + f * 0.06); }
+  sc(F.muffin, 0.72 + hf * 0.1, 0.3 + hf * 0.12, 0.6 + hf * 0.3);
+  for (const [m, sx] of [[F.butt, 1], [F.buttR, -1]]) { sc(m, 0.45 + hf * 0.2, 0.35 + hf * 0.16, 0.22 + hf * 0.3); m.position.x = sx * (0.33 + hf * 0.08); }
   const g = Math.min(f, 2.5);
   sc(F.chin, 0.05 + g * 0.32, 0.05 + g * 0.16, 0.05 + g * 0.25); F.chin.position.set(0, -0.5 - g * 0.05, 0.25 + g * 0.1);
   sc(F.chin2, 0.05 + g * 0.38, 0.04 + g * 0.13, 0.04 + g * 0.24); F.chin2.position.set(0, -0.68 - g * 0.06, 0.16 + g * 0.08);
@@ -742,9 +784,10 @@ function animChar(c, dt) {
   if (c.air) { T.lsh = T.rsh = Math.PI * 0.95; T.lel = T.rel = -0.1; T.lhip = 0.3; T.lkn = 0.9; T.rhip = -0.1; T.rkn = 0.2; }
   if (c.pose === "hands") { const w = Math.sin(c.t * 9) * 0.15; T.lsh = Math.PI + w; T.rsh = Math.PI - w; Z.lsh = 0.35; Z.rsh = -0.35; T.lel = T.rel = -0.5; }
   const h = c.holding, sl = c.slash > 0 ? c.slash / c.slashDur : 0;
-  if (h === 1) { T.rsh = -Math.PI / 2 + 0.3 * sl; T.rel = 0; }
+  if (h === 1 || h === 13 || h === 15) { T.rsh = -Math.PI / 2 + 0.3 * sl; T.rel = 0; if (h === 13) { T.lsh = -1.3; T.lel = -0.5; } }
+  else if (h === 14) { if (sl > 0) { T.rsh = -0.6 - sl * 2.4; T.rel = -0.3; } else { T.rsh = -1.1; T.rel = -0.6; } }
   else if (h === 2) { T.rsh = -Math.PI / 2 - Math.sin(sl * Math.PI) * 1.3; T.rel = -0.2 + Math.sin(sl * Math.PI) * 0.6; }
-  else if (h === 3 || h === 4 || h === 8 || h === 9) { if (sl > 0) { T.rsh = -0.4 - sl * 2.6; T.rel = -0.2; wy = -0.35 * (1 - sl); } else { T.rsh = -0.9; T.rel = -0.9; } }
+  else if (h === 3 || h === 4 || h === 8 || h === 9 || h === 16) { if (sl > 0) { T.rsh = -0.4 - sl * 2.6; T.rel = -0.2; wy = -0.35 * (1 - sl); } else { T.rsh = -0.9; T.rel = -0.9; } }
   else if (h === 5) { if (c.eating > 0) { T.rsh = -2.5; T.rel = -1.7; c.eating -= dt; } else if (sl > 0) { T.rsh = -0.6 - sl * 2.4; T.rel = -0.3; } else { T.rsh = -1.1; T.rel = -0.6; } }
   else if (h === 7 || h === 10) { const j = c.sawing > 0 ? Math.sin(c.t * 70) * 0.05 : 0; T.rsh = T.lsh = -1.25 + j; T.rel = T.lel = -0.5; if (c.sawing > 0) c.sawing -= dt; }
   else if (h === 12) { T.rsh = sl > 0 ? -1.7 : -1.1; T.rel = -0.6; }
@@ -860,6 +903,31 @@ function makeRocketL() {
   const tip = new THREE.Object3D(); tip.position.set(0, -2.6, 0.15); g.add(tip); g.userData.tip = tip;
   return g;
 }
+function makeShotgun() {
+  const g = new THREE.Group(); g.position.y = -0.4;
+  g.add(mesh(B(0.32, 2.0, 0.42), M(0x2b2b2b), 0, -0.85, 0.05)); g.add(mesh(B(0.3, 0.9, 0.5), M(0x6d4423), 0, 0.15, -0.1));
+  g.add(mesh(B(0.36, 0.5, 0.48), M(0x8a5a2b), 0, -0.9, 0.05));
+  const tip = new THREE.Object3D(); tip.position.set(0, -1.9, 0.05); g.add(tip); g.userData.tip = tip;
+  return g;
+}
+function makeGrenadeHeld() {
+  const g = new THREE.Group(); g.position.set(0, -0.7, 0.1);
+  g.add(mesh(new THREE.SphereGeometry(0.33, 12, 10), M(0x3b5323))); g.add(mesh(B(0.12, 0.2, 0.12), M(0x999999), 0, 0.0, 0.38));
+  return g;
+}
+function makeFreezeRay() {
+  const g = new THREE.Group(); g.position.y = -0.4;
+  g.add(mesh(B(0.45, 1.3, 0.5), M(0xeeeeee), 0, -0.6, 0.05)); g.add(mesh(B(0.3, 0.6, 0.3), M(0x1565c0), 0, -1.45, 0.05));
+  g.add(mesh(B(0.42, 0.18, 0.42), new THREE.MeshBasicMaterial({ color: 0x7fe7ff }), 0, -1.8, 0.05)); g.add(mesh(B(0.24, 0.3, 0.6), M(0x555555), 0, -0.05, -0.32));
+  const tip = new THREE.Object3D(); tip.position.set(0, -1.95, 0.05); g.add(tip); g.userData.tip = tip;
+  return g;
+}
+function makeLaserSword() {
+  const g = new THREE.Group(); g.position.y = -0.4;
+  g.add(mesh(B(0.22, 0.75, 0.22), M(0x9e9e9e), 0, -0.05, 0)); g.add(mesh(B(0.28, 0.12, 0.28), M(0x333333), 0, -0.42, 0));
+  g.add(mesh(B(0.16, 3.0, 0.16), new THREE.MeshBasicMaterial({ color: 0xff3030 }), 0, -1.98, 0, false));
+  return g;
+}
 function makeMedkit() {
   const g = new THREE.Group(); g.position.set(0, -0.75, 0.1);
   g.add(mesh(B(0.8, 0.3, 0.6), M(0xffffff)));
@@ -869,7 +937,7 @@ function makeMedkit() {
   return g;
 }
 function makeHeldBurger() { const b = makeBurger(0.7); b.rotation.x = Math.PI / 2; b.position.set(0, -0.75, 0.1); return b; }
-const TOOL_MAKERS = [null, makeGun, makeKnife, makeSword, makeBat, makeHeldBurger, null, makeChainsaw, makeAxe, makeHammer, makeFlamer, makeRocketL, makeMedkit];
+const TOOL_MAKERS = [null, makeGun, makeKnife, makeSword, makeBat, makeHeldBurger, null, makeChainsaw, makeAxe, makeHammer, makeFlamer, makeRocketL, makeMedkit, makeShotgun, makeGrenadeHeld, makeFreezeRay, makeLaserSword];
 
 // ================= audio (synthesised, no voices) =================
 let actx = null, master = null, wet = null, noiseBuf = null;
@@ -940,6 +1008,9 @@ const sfx = {
   crackle() { if (!every("crackle", 90)) return; for (let i = 0; i < 3; i++) burst({ dur: 0.02, type: "highpass", f: 2000, vol: 0.3, when: i * rand(0.02, 0.06), rev: 0.1 }); },
   splash() { if (!every("splash", 80)) return; burst({ dur: 0.5, type: "lowpass", f: 1800, f2: 300, vol: 0.6, rev: 0.4 }); burst({ dur: 0.2, type: "bandpass", f: 900, q: 1, vol: 0.4 }); },
   launch() { burst({ dur: 0.6, type: "bandpass", f: 300, f2: 2000, q: 0.8, vol: 0.7, rev: 0.5 }); osc({ f: 60, f2: 30, dur: 0.3, vol: 0.7 }); },
+  laser() { osc({ type: "sawtooth", f: 180, f2: 520, dur: 0.22, vol: 0.12, rev: 0.3 }); burst({ dur: 0.2, type: "bandpass", f: 1500, q: 2, vol: 0.2 }); },
+  shatter() { for (let i = 0; i < 6; i++) { burst({ dur: 0.05, type: "highpass", f: 5000, vol: 0.5, when: i * 0.03, rev: 0.3 }); osc({ f: rand(2500, 5000), dur: 0.2, vol: 0.04, when: i * 0.04, rev: 0.4 }); } },
+  freeze() { osc({ f: 1800, f2: 600, dur: 0.4, vol: 0.08, rev: 0.4 }); burst({ dur: 0.3, type: "highpass", f: 6000, vol: 0.15 }); },
   heal() { [523, 659, 784, 1047].forEach((f, i) => osc({ type: "triangle", f, dur: 0.25, vol: 0.12, when: i * 0.07, rev: 0.3 })); },
   grab() { burst({ dur: 0.08, type: "bandpass", f: 700, q: 2, vol: 0.4, rev: 0 }); },
   cash() { osc({ type: "triangle", f: 1318, dur: 0.12, vol: 0.1 }); osc({ type: "triangle", f: 1760, dur: 0.3, vol: 0.1, when: 0.07 }); osc({ f: 2637, dur: 0.25, vol: 0.03, when: 0.07 }); },
@@ -981,6 +1052,12 @@ const LINES = {
   zap: ["BZZZZZT!", "AAAAH-ZZT!", "MY HAIR!", "Z-z-zappy!"],
   oil: ["Ew, it's oily!", "I'm all greasy!", "Don't light a match!"],
   soda: ["It's fizzy!", "It tickles!", "*BUURP*", "Bubbles everywhere!"],
+  grenade: ["GRENADE!!", "Get down!", "Is that a grenade?!", "RUN!!"],
+  freeze: ["What's that ray gun?!", "Don't freeze me!", "Is that a freeze ray?!"],
+  laser: ["Is that a laser sword?!", "Whoa, it's glowing!", "Don't slice me with that!"],
+  thawed: ["That was SO cold!", "I can feel my legs again!", "Brrr... what happened?!"],
+  piranha: ["PIRANHAS!!", "THEY'RE BITING ME!", "MY TOES!", "GET THEM OFF!"],
+  bloodpool: ["EWWW, BLOOD!", "Is this REAL blood?!", "I'm gonna be sick..."],
   choc: ["Mmm... chocolate...", "I'm getting so fat!", "Too much chocolate!"],
   thanks: ["Thank you!!", "I feel better!", "You saved me!", "Wait... you're helping me?", "My hero!", "Thanks, doc!"],
   milk: ["Ew, milk!", "I'm lactose intolerant!", "Why is there a milk pool?!", "It's in my nose!"],
@@ -997,6 +1074,7 @@ const LINES = {
   trip: ["Whoa!", "I can't walk!", "Too... heavy..."],
   fight: ["Hey! You wanna fight?!", "Come here!", "You're going down!", "That's it!"],
   bring: ["Bring it on!", "You don't scare me!", "Try it, noob!", "Let's go!"],
+  gunman: ["Freeze!", "Drop it!", "Eat lead!", "You're done!", "Got you now!", "Hands where I can see them!"],
   attack: ["Take this!", "HYAH!", "Oof!", "Get rekt!"],
   won: ["Ha! Got you!", "Who's the noob now?", "Easy.", "Stay down!"],
   witness: ["OH NO!", "He got destroyed!", "Call 911!", "RUN!", "That's so gross!", "Ewww guts!", "AAAAH!"],
@@ -1024,7 +1102,7 @@ function isAimedAt(npc) {
   const to = V(npc.pos.x, npc.pos.y + 3.5, npc.pos.z).sub(camera.position), d = to.length();
   return d < 45 && to.normalize().dot(camDir()) > 0.985;
 }
-const THREAT = ["fists", "gun", "knife", "sword", "bat", "burger", "grab", "chainsaw", "axe", "hammer", "flame", "rocket", "thanks"];
+const THREAT = ["fists", "gun", "knife", "sword", "bat", "burger", "grab", "chainsaw", "axe", "hammer", "flame", "rocket", "thanks", "gun", "grenade", "freeze", "laser"];
 const bubblesEl = document.getElementById("bubbles");
 function say(who, kind, dur = 2.4) {
   const p = who.person || who; if (!p || !p.alive || p.isPlayer) return;
@@ -1146,6 +1224,51 @@ for (let i = 0; i < CAPS.length; i++) for (let j = i + 1; j < CAPS.length; j++) 
   CAP_PAIRS.push([i, j]);
 }
 const _d1 = V(), _d2 = V(), _rr = V(), _c1 = V(), _c2 = V(), _nn = V();
+// ---- ragdoll engine: joint limits so bodies bend like real people ----
+const _jx = V(), _jy = V(), _jz = V(), _jm = V(), _jo = V(), _jd = V(), _jt = V();
+function hinge(rd, a, m, b, fwd, sign, strength) {
+  const P = rd.pts;
+  _jm.addVectors(P[a], P[b]).multiplyScalar(0.5);
+  _jo.subVectors(P[m], _jm);
+  const along = _jo.dot(fwd) * sign;
+  if (along >= 0) return;                         // already bending the right way
+  const fix = -along * strength, O = rd.prev;
+  // move the old positions too, so fixing a joint never adds speed (no shaking)
+  P[m].addScaledVector(fwd, fix * sign); O[m].addScaledVector(fwd, fix * sign * 0.95);
+  P[a].addScaledVector(fwd, -fix * sign * 0.25); O[a].addScaledVector(fwd, -fix * sign * 0.24);
+  P[b].addScaledVector(fwd, -fix * sign * 0.25); O[b].addScaledVector(fwd, -fix * sign * 0.24);
+}
+function cone(rd, base, tip, axis, cosMax, strength) {
+  const P = rd.pts;
+  _jd.subVectors(P[tip], P[base]); const len = _jd.length(); if (len < 1e-4) return;
+  _jd.divideScalar(len);
+  if (_jd.dot(axis) >= cosMax) return;
+  _jt.copy(_jd).lerp(axis, strength).normalize();
+  _jo.copy(P[tip]); P[tip].copy(P[base]).addScaledVector(_jt, len);
+  rd.prev[tip].add(_jo.subVectors(P[tip], _jo).multiplyScalar(0.95));
+}
+function jointLimits(rd) {
+  const P = rd.pts, D = rd.detached;
+  _jx.subVectors(P[2], P[3]);                     // body right -> left
+  _jy.subVectors(P[0], P[19]).normalize();        // body up
+  _jz.crossVectors(_jx, _jy).normalize();         // body forward
+  // knees only bend backwards, elbows only bend forwards
+  if (!D.ll) hinge(rd, 13, 14, 15, _jz, 1, 0.6);
+  if (!D.rl) hinge(rd, 16, 17, 18, _jz, 1, 0.6);
+  if (!D.la) hinge(rd, 7, 8, 9, _jz, -1, 0.35);
+  if (!D.ra) hinge(rd, 10, 11, 12, _jz, -1, 0.35);
+  // neck: head stays within ~50 degrees of the spine
+  if (!D.head) cone(rd, 0, 6, _jy, 0.64, 0.35);
+  // waist: upper body can't fold more than ~60 degrees over the hips
+  _jd.subVectors(P[19], P[1]).normalize(); cone(rd, 19, 0, _jd, 0.5, 0.25);
+  // hips: legs can't swing up behind the back
+  for (const [hip, knee, k] of [[13, 14, "ll"], [16, 17, "rl"]]) {
+    if (D[k]) continue;
+    _jd.subVectors(P[knee], P[hip]); const l = _jd.length(); if (l < 1e-4) continue;
+    const back = _jd.dot(_jz) / l;
+    if (back < -0.6) { const f = (-0.6 - back) * l * 0.5; P[knee].addScaledVector(_jz, f); rd.prev[knee].addScaledVector(_jz, f * 0.95); }
+  }
+}
 function capsulePush(P1, Q1, P2, Q2, rr, measure, o1, o2, o3, o4) {
   _d1.subVectors(Q1, P1); _d2.subVectors(Q2, P2); _rr.subVectors(P1, P2);
   const a = _d1.dot(_d1), e = _d2.dot(_d2), f = _d2.dot(_rr);
@@ -1202,9 +1325,13 @@ function makeRagdoll(c, vel, person) {
   rig([0, 2, 3, 19], "torso"); rig([19, 1, 4, 5], "torso");
   add(0, 1, "torso", 0.3); add(2, 4, "torso", 0.3); add(3, 5, "torso", 0.3);
   add(6, 0, "head"); add(6, 2, "head"); add(6, 3, "head"); add(6, 19, "head");   // waist anchor stops the head folding into the chest
-  for (const k in LIMB_DEF) { const [t, m, b, j1, j2] = LIMB_DEF[k]; add(t, m, k + "s"); add(m, b, k + "s"); add(t, j1, k); add(t, j2, k); }
+  for (const k in LIMB_DEF) {
+    const [t, m, b, j1, j2] = LIMB_DEF[k]; add(t, m, k + "s"); add(m, b, k + "s"); add(t, j1, k); add(t, j2, k);
+    cons.push({ a: t, b, d: k[1] === "l" ? 0.6 : 0.5, tag: k + "s", k: 1, min: true });   // knees/elbows can't fold flat
+  }
   const fatR = c.fat || 0;
-  const rd = { capR: CAPS.map(k => k.r + fatR * (k.g === "T" ? 0.25 : k.g === "H" ? 0.06 : k.up ? 0.15 : 0.1)), char: c, pts, prev, cons, parts: c.parts, skin: c.look.skin, detached: {}, xs: {}, bleed: [], still: 0, sleep: false, torsoHits: 0, ic: {}, person };
+  const W = REST.map((_, i) => { const g = GROUPS[i]; return g === 0 ? 1 / (3 * (1 + fatR)) : g === 1 ? 1 / 1.5 : g >= 4 ? 1 / (1.3 * (1 + fatR * 0.4)) : 1 / (1 + fatR * 0.3); });
+  const rd = { w: W, capR: CAPS.map(k => k.r + fatR * (k.g === "T" ? 0.25 : k.g === "H" ? 0.06 : k.up ? 0.15 : 0.1)), char: c, pts, prev, cons, parts: c.parts, skin: c.look.skin, detached: {}, xs: {}, bleed: [], still: 0, sleep: false, torsoHits: 0, ic: {}, person };
   for (const k in c.parts) { scene.attach(c.parts[k]); c.parts[k].userData.rd = rd; c.parts[k].visible = true; }
   scene.remove(c.group);
   for (const k of ["head", "la", "ra", "ll", "rl"]) rd.xs[k] = sub(pts[2], pts[3]);
@@ -1240,11 +1367,13 @@ function detach(rd, k, vel, minL = 0) {
 }
 // hit one body part of a floppy body. Returns money earned.
 function hitPart(rd, k, vel, cutChance, kind) {
+  if (rd.person && rd.person.gold) { rd.frozen = false; pushRagdoll(rd, ALL_PTS, vel); sfx.bonk(); return 3; }
+  if (rd.person && rd.person.frozen > 0) { shatter(rd); return 40; }
   pushRagdoll(rd, LIMB_PTS[k], vel);
   const pos = limbCenter(rd, k), p = rd.person, I = p ? p.inj[k] : {};
   focusOn(p);
-  const sharp = kind === "gun" || kind === "knife" || kind === "sword" || kind === "mega" || kind === "axe" || kind === "chainsaw" || kind === "blast", blunt = kind === "bat" || kind === "punch" || kind === "hammer";
-  const minL = kind === "sword" || kind === "axe" || kind === "chainsaw" ? 1 : 0, L = Math.max(save.gore[k], minL);
+  const sharp = kind === "gun" || kind === "knife" || kind === "sword" || kind === "mega" || kind === "axe" || kind === "chainsaw" || kind === "blast" || kind === "laser", blunt = kind === "bat" || kind === "punch" || kind === "hammer";
+  const minL = kind === "sword" || kind === "axe" || kind === "chainsaw" || kind === "laser" ? 1 : 0, L = Math.max(save.gore[k], minL);
   const seg = pick(LIMB_SEGS[k]);
   if (k === "torso") {
     rd.torsoHits++;
@@ -1274,6 +1403,7 @@ function solvePair(a, b, minD) {
 function updateRagdolls(dt) {
   const steps = Math.min(3, Math.max(1, Math.round(dt / RAG_H)));
   for (const rd of ragdolls) {
+    if (rd.frozen && !(player.grab && player.grab.rd === rd)) continue;
     const grabbed = player.grab && player.grab.rd === rd ? player.grab.idx : -1;
     if (grabbed >= 0) rd.sleep = false;
     // walk into bodies to kick them around
@@ -1305,9 +1435,11 @@ function updateRagdolls(dt) {
           for (const c of rd.cons) {
             const a = pts[c.a], b = pts[c.b];
             const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, len = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
-            const f = (len - c.d) / len * 0.5 * c.k;
-            a.x += dx * f; a.y += dy * f; a.z += dz * f; b.x -= dx * f; b.y -= dy * f; b.z -= dz * f;
+            if (c.min && len >= c.d) continue;
+            const wa = rd.w[c.a], wb = rd.w[c.b], f = (len - c.d) / len * c.k / (wa + wb);   // heavy parts move less
+            a.x += dx * f * wa; a.y += dy * f * wa; a.z += dz * f * wa; b.x -= dx * f * wb; b.y -= dy * f * wb; b.z -= dz * f * wb;
           }
+          if (it % 2 === 0) jointLimits(rd);
           if (it % 2 === 1) for (let q = 0; q < CAP_PAIRS.length; q++) { const [i, j] = CAP_PAIRS[q], A = CAPS[i], C = CAPS[j]; capsulePush(pts[A.a], pts[A.b], pts[C.a], pts[C.b], rd.pairMin[q], false, prev[A.a], prev[A.b], prev[C.a], prev[C.b]); }
         }
         if (grabbed >= 0) pts[grabbed].copy(player.holdPos);
@@ -1425,6 +1557,7 @@ function reapplyInjuries(p, c) {
     const I = p.inj[k];
     if (I.broken) { addBreak(c.parts, k); c.broken[k] = true; }
     for (let i = 0; i < Math.min(4, I.wounds || 0); i++) addWound(c.parts, pick(LIMB_SEGS[k]));
+    for (let i = 0; i < Math.min(4, I.holes || 0); i++) addBulletHole(c.parts, pick(LIMB_SEGS[k]));
   }
 }
 function die(p, cause) {
@@ -1441,6 +1574,7 @@ function die(p, cause) {
 // a body part slams the ground hard: bones break, skulls crack
 function impact(rd, i, speed) {
   const p = rd.person; if (!p || speed < 22) return;
+  if (p.frozen > 0 && !p.gold) { shatter(rd); return; }
   const k = PT_LIMB[i], I = p.inj[k], now = performance.now();
   if (I.missing || now - (rd.ic[k] || 0) < 400) return;
   rd.ic[k] = now;
@@ -1504,7 +1638,7 @@ function skeletonSVG(p) {
   const crack = (x, y) => `<polyline points="${x - 7},${y - 3} ${x - 2},${y + 3} ${x + 2},${y - 3} ${x + 7},${y + 3}" fill="none" stroke="#e00" stroke-width="2.4"/>`;
   const drops = (k, x, y) => { let o = ""; for (let i = 0; i < Math.min(3, I[k].wounds || 0); i++) o += `<circle cx="${x + i * 6 - 6}" cy="${y}" r="2.8" fill="#e00"/>`; return o; };
   const gone = (x, y, t) => `<text x="${x}" y="${y}" font-size="8" font-weight="bold" fill="#ff6b6b" text-anchor="middle">${t}</text>`;
-  let s = '<svg viewBox="0 0 120 206" width="78" height="134">';
+  let s = '<svg viewBox="0 0 120 206" width="56" height="96">';
   s += bone("head", 43, 3, 34, 30);
   if (!I.head.missing) s += '<rect x="50" y="12" width="7" height="8" fill="#222"/><rect x="63" y="12" width="7" height="8" fill="#222"/><rect x="58" y="21" width="4" height="4" fill="#222"/><rect x="51" y="26" width="18" height="3" fill="#222"/>';
   else s += gone(60, 21, "MISSING");
@@ -1538,7 +1672,8 @@ function injuryList(p) {
     if (I.broken) bits.push(k === "torso" ? "broken ribs" : "BROKEN");
     if (I.cracked) bits.push("cracked skull");
     if (I.organs) bits.push("guts out");
-    if (I.wounds) bits.push(I.wounds + (I.wounds > 1 ? " wounds" : " wound"));
+    if (I.holes) bits.push(I.holes + (I.holes > 1 ? " bullet holes" : " bullet hole"));
+    if (I.wounds && I.wounds > (I.holes || 0)) bits.push((I.wounds - (I.holes || 0)) + " wounds");
     if (bits.length) out.push(`<div class="${I.broken || I.organs ? "bad" : "mid"}">${n}: ${bits.join(", ")}</div>`);
   }
   return out.length ? out.join("") : "<div>No injuries... yet</div>";
@@ -1582,9 +1717,10 @@ const npcs = [];
 function makeNPC(pos, look, person, dummy) {
   const char = makeChar(look);
   const p = person || makePerson(look, dummy ? "Dummy " + (++dummyN) : null, dummy);
-  if (!person && !dummy) { p.fighter = Math.random() < 0.3; p.weapon = p.fighter && Math.random() < 0.45 ? "bat" : "fists"; }
+  if (!person && !dummy) { p.fighter = Math.random() < 0.3; const r = Math.random(); p.weapon = p.fighter && r < 0.3 ? "gun" : p.fighter && r < 0.6 ? "bat" : "fists"; }
   const npc = { person: p, vy: 0, char, pos: pos.clone(), heading: rand(0, 6.28), state: dummy ? "dummy" : "walk", target: null, timer: 0, cool: rand(0, 3), atkCD: 0, hiCD: rand(3, 10), fighter: !!p.fighter, weapon: p.weapon, spawned: false };
-  if (p.weapon === "bat") { char.parts.rla.add(makeBat()); char.holding = 4; }
+  if (p.weapon === "bat") { npc.toolMesh = makeBat(); char.parts.rla.add(npc.toolMesh); char.holding = 4; }
+  if (p.weapon === "gun") { npc.toolMesh = makeGun(); char.parts.rla.add(npc.toolMesh); char.holding = 1; }
   p.npc = npc; p.rd = null; p.down = false;
   char.group.userData.npc = npc; char.group.position.copy(npc.pos); char.group.rotation.y = npc.heading;
   npcs.push(npc);
@@ -1625,6 +1761,7 @@ function reactTo(w, pos) {
 function knockDown(n, vel, quiet) {
   const i = npcs.indexOf(n); if (i >= 0) npcs.splice(i, 1);
   const p = n.person, rd = makeRagdoll(n.char, vel, p);
+  if (p.frozen > 0 || p.gold) rd.frozen = true;
   p.npc = null; p.downT = 0;
   if (!quiet) { focusOn(p); post.hurt = Math.max(post.hurt, 0.3); for (const w of npcs) if (w.pos.distanceTo(n.pos) < 30) reactTo(w, n.pos); }
   return rd;
@@ -1650,6 +1787,7 @@ function updateNPCs(dt) {
       c.group.position.copy(npc.pos); c.group.rotation.y = npc.heading; c.moving = false; animChar(c, dt);
       continue;
     }
+    if (npc.state === "frozen" || npc.state === "statue") { c.group.position.copy(npc.pos); continue; }
     const d = npc.pos.distanceTo(player.pos);
     npc.cool -= dt; npc.hiCD -= dt; npc.atkCD -= dt;
     if (pActive && w > 0 && w !== 12 && d < 22 && npc.state === "walk" && npc.cool <= 0) {
@@ -1697,6 +1835,12 @@ function updateNPCs(dt) {
       if (!pp.alive || dd > 60 || npc.fightT > 40 || inMenu) { npc.state = "walk"; npc.target = null; if (!pp.alive && dd < 30) say(npc, "won"); }
       else {
         npc.heading = angLerp(npc.heading, Math.atan2(to.x, to.z), dt * 10);
+        if (npc.weapon === "gun") {
+          // gunmen keep their distance and shoot
+          if (dd > 20) { dir = to.clone().normalize(); move = 8 * slow * limp; }
+          else if (dd < 7) { dir = to.clone().normalize().negate(); move = 5 * slow * limp; }
+          if (npc.atkCD <= 0 && dd < 32 && Math.abs(player.pos.y - npc.pos.y) < 8) { npc.atkCD = rand(1.6, 2.6); npcShoot(npc); }
+        } else {
         if (dd > 2.8) { dir = to.normalize(); move = 8.5 * slow * limp; }
         if (dd < 3.6 && npc.atkCD <= 0 && Math.abs(player.pos.y - npc.pos.y) < 3) {
           npc.atkCD = rand(0.9, 1.5); c.slash = c.slashDur = npc.weapon === "bat" ? 0.35 : 0.22;
@@ -1705,6 +1849,7 @@ function updateNPCs(dt) {
             if (npcs.includes(npc) && npc.pos.distanceTo(player.pos) < 4.3) hurtPlayer(npc.weapon === "bat" ? 11 : 5, npc.weapon, npc);
             else sfx.whoosh();
           }, 170);
+        }
         }
       }
     }
@@ -1740,12 +1885,14 @@ function buildPlayerChar() {
   if (player.person.burgers) setCharFat(player.char, playerFat());
   if (player.person.charred) charParts(player.char.parts);
   reapplyInjuries(player.person, player.char);
+  for (const k of ["la", "ra"]) if (player.person.inj[k].missing) for (const sg of LIMB_SEGS[k]) player.char.parts[sg].visible = false;
   player.char.group.position.copy(player.pos);
   setWeapon(player.weapon);
 }
 let money = save.money, combo = 0, comboT = 0, shake = 0;
 const crossEl = document.getElementById("cross");
-const AIM_TOOLS = [1, 5, 6, 10, 11];
+const AIM_TOOLS = [1, 5, 6, 10, 11, 13, 14, 15];
+const TOOL_ICONS = ["👊", "🔫", "🔪", "⚔️", "🏏", "🍔", "✋", "🪚", "🪓", "🔨", "🔥", "🚀", "🩹", "💥", "💣", "❄️", "🗡️"];
 function setWeapon(w) {
   if (player.grab) releaseGrab(false);
   player.weapon = w;
@@ -1754,6 +1901,9 @@ function setWeapon(w) {
   player.tool = null;
   if (TOOL_MAKERS[w]) { player.tool = TOOL_MAKERS[w](); c.parts.rla.add(player.tool); }
   c.holding = w;
+  const tu = document.getElementById("tUse"), ta = document.getElementById("tAlt");
+  if (tu) tu.textContent = TOOL_ICONS[w] || "👊";
+  if (ta) { ta.style.display = w === 5 || w === 12 ? "flex" : "none"; ta.textContent = w === 12 ? "💚" : "😋"; }
   updateCross();
   document.querySelectorAll(".slot").forEach(s => s.classList.toggle("on", +s.dataset.w === w));
 }
@@ -1834,7 +1984,8 @@ const SWING = {
   sword: { range: 7.5, max: 4, fwd: 9, up: 4, cut: 1, parts: ["head", "la", "ra", "ll", "rl", "torso", "la", "ra"], snd: "squish", pre: "shing", money: 22 },
   bat: { range: 6.5, max: 3, fwd: 30, up: 11, cut: 0, parts: ["head", "head", "torso", "torso", "la", "ra", "ll", "rl"], snd: "bonk", pre: "whoosh", money: 22 },
   axe: { range: 6.5, max: 2, fwd: 16, up: 7, cut: 1, parts: ["head", "la", "ra", "ll", "rl", "torso", "head"], snd: "chop", pre: "whoosh", money: 30 },
-  hammer: { range: 6, max: 2, fwd: 24, up: 24, cut: 0, parts: ["head", "head", "torso", "la", "ra", "ll", "rl"], snd: "smash", pre: "whoosh", money: 30 }
+  hammer: { range: 6, max: 2, fwd: 24, up: 24, cut: 0, parts: ["head", "head", "torso", "la", "ra", "ll", "rl"], snd: "smash", pre: "whoosh", money: 30 },
+  laser: { range: 8, max: 5, fwd: 8, up: 3, cut: 1, parts: ["head", "la", "ra", "ll", "rl", "torso", "la", "ra"], snd: "sizzle", pre: "laser", money: 25 }
 };
 function swing(kind) {
   const W = SWING[kind], c = player.char; c.slash = c.slashDur = kind === "hammer" ? 0.4 : 0.32;
@@ -1855,6 +2006,7 @@ function swing(kind) {
       }
       sfx[W.snd]();
       if (kind === "hammer") shake = Math.max(shake, 0.45);
+      if (kind === "laser" && Math.random() < 0.3) ignite(t.npc ? t.npc.person : t.rd.person);
     }
   }, kind === "hammer" ? 170 : 120);
 }
@@ -1874,7 +2026,7 @@ function saw() {
   player.sawHit = 0.2;
 }
 function updateSawSound(dt) {
-  const on = player.weapon === 7 && !inMenu && !shopOpen && player.person.alive && !player.rd;
+  const on = (player.weapon === 7 || player.weapon === 16) && !inMenu && !shopOpen && player.person.alive && !player.rd, lz = player.weapon === 16;
   if (player.tool && player.weapon === 7) player.tool.rotation.z = (Math.random() - 0.5) * (mouseDown ? 0.08 : 0.025);
   if (on && actx && !sawSnd) {
     const o = actx.createOscillator(), f = actx.createBiquadFilter(), g = actx.createGain();
@@ -1885,6 +2037,8 @@ function updateSawSound(dt) {
   const t = actx.currentTime;
   if (!on) { sawSnd.g.gain.setTargetAtTime(0, t, 0.05); const old = sawSnd; setTimeout(() => { try { old.o.stop(); } catch (e) {} }, 400); sawSnd = null; return; }
   const rev = mouseDown, hit = (player.sawHit || 0) > 0;
+  if (lz) { const sw = player.char.slash > 0; sawSnd.o.type = "triangle"; sawSnd.o.frequency.setTargetAtTime(sw ? 150 : 92, t, 0.05); sawSnd.f.frequency.setTargetAtTime(1200, t, 0.05); sawSnd.g.gain.setTargetAtTime(sw ? 0.09 : 0.045, t, 0.05); return; }
+  sawSnd.o.type = "sawtooth";
   sawSnd.o.frequency.setTargetAtTime((rev ? (hit ? 120 : 165) : 55) + Math.random() * 8, t, 0.04);
   sawSnd.f.frequency.setTargetAtTime(rev ? 2200 : 700, t, 0.05);
   sawSnd.g.gain.setTargetAtTime(rev ? 0.14 : 0.05, t, 0.05);
@@ -2016,6 +2170,7 @@ function explodeAt(pos) {
     pp.blood -= 50 * k; pp.lastHurt = performance.now(); pp.bleedStop = false;
     const vel = sub(player.pos, pos).setY(0).normalize().multiplyScalar(20 * k + 8).setY(14 * k + 6);
     if (!player.rd) ragdollPlayer(vel); else pushRagdoll(player.rd, ALL_PTS, vel);
+    if (k > 0.55 && player.rd && Math.random() < k) { const opts = ["la", "ra", "ll", "rl"].filter(x => !player.rd.detached[x]); if (opts.length) detach(player.rd, pick(opts), vel); }
     if (pp.blood <= 0) die(pp, "blew yourself up");
   }
   for (const w of npcs) if (w.pos.distanceTo(pos) < 40) reactTo(w, pos);
@@ -2077,12 +2232,13 @@ function liquidEffect(p, q, dt, rd) {
   if (!p) return;
   const k = q.type, T = q.T, parts = rd ? rd.parts : partsOf(p);
   p.liqT = (p.liqT || 0) + dt;
-  if (p.liqT > 0.5) { p.liqT = 0; if (k === "acid") addCoat(parts, 0x3d5a12); else if (k !== "lava") addCoat(parts, T.color); }
+  if (p.liqT > 0.5) { p.liqT = 0; if (k === "acid") addCoat(parts, 0x3d5a12); else if (k !== "lava" && k !== "gold" && k !== "piranha" && !(p.frozen > 0)) addCoat(parts, T.color); }
   if (k === "acid") {
     if (p.alive) { p.blood -= (p.isPlayer ? 12 : 9) * dt; if (p.isPlayer) { p.lastHurt = performance.now(); p.bleedStop = false; post.hurt = Math.max(post.hurt, 0.4); } }
     if (Math.random() < dt * 4) sfx.sizzle();
     if (Math.random() < dt * 6) { const c = rd ? limbCenter(rd, "torso") : p.npc ? p.npc.pos : player.pos; spawnFire(V(c.x + rand(-1, 1), q.surf, c.z + rand(-1, 1)), V(0, 2, 0), 0.8, 0.5, true); }
     if (p.npc && p.alive) { say(p.npc, "acid", 1.8); knockDown(p.npc, V(0, 2, 0)); return; }
+    if (p.isPlayer && !rd) { p.dipT = (p.dipT || 0) + dt; if (p.dipT > 1.5) { p.dipT = 0; ragdollPlayer(V(0, 1, 0)); popup("You're melting!", player.pos.clone().setY(player.pos.y + 3), "#7dff3a"); } }
     if (rd) {
       rd.acidT = (rd.acidT || 0) + dt;
       if (rd.acidT > 1.4) {
@@ -2104,6 +2260,31 @@ function liquidEffect(p, q, dt, rd) {
   else if (k === "milk") { if (p.npc && Math.random() < dt * 0.4) say(p.npc, "milk", 1.8); }
   else if (k === "gravy" || k === "choc") { p.gravyT = (p.gravyT || 0) + dt; if (p.gravyT > 0.15) { p.gravyT = 0; if (p.isPlayer) gravyPlayer(); else if (p.alive) feed(p); } if (k === "choc" && p.npc && Math.random() < dt * 0.4) say(p.npc, "choc", 1.8); }
   else if (k === "water") { p.burn = 0; }
+  else if (k === "nitro") {
+    if (p.isPlayer) { p.blood -= 3 * dt; p.burn = 0; if (p.blood <= 0) die(p, "froze solid in liquid nitrogen"); }
+    else freezePerson(p, 9);
+  } else if (k === "gold") {
+    if (p.isPlayer) { if (p.alive) { goldPerson(p); } } else goldPerson(p);
+  } else if (k === "blood") {
+    if (p.npc && Math.random() < dt * 0.5) say(p.npc, "bloodpool", 1.8);
+  } else if (k === "piranha") {
+    if (p.alive) { p.blood -= (p.isPlayer ? 6 : 8) * dt; if (p.isPlayer) { p.lastHurt = performance.now(); p.bleedStop = false; post.hurt = Math.max(post.hurt, 0.35); } }
+    const c = rd ? limbCenter(rd, "torso") : p.npc ? p.npc.pos.clone().setY(p.npc.pos.y + 2) : player.pos.clone().setY(player.pos.y + 2);
+    if (Math.random() < dt * 6) spawnBlood(c, V(0, 2, 0), 2, 2);
+    if (p.npc && p.alive) { say(p.npc, "piranha", 1.6); knockDown(p.npc, V(0, 2, 0)); return; }
+    if (p.isPlayer && !rd) { p.dipT = (p.dipT || 0) + dt; if (p.dipT > 1.5) { p.dipT = 0; ragdollPlayer(V(0, 1, 0)); popup("The piranhas got you!", player.pos.clone().setY(player.pos.y + 3), "#ff5252"); } }
+    if (p.isPlayer && Math.random() < dt * 1.5) { addWound(partsOf(p), pick(["lll", "rll", "lul", "rul", "lla", "rla"])); sfx.squish(); }
+    if (rd) {
+      rd.biteT = (rd.biteT || 0) + dt;
+      if (rd.biteT > 1.0) {
+        rd.biteT = 0;
+        const left = ["ll", "rl", "la", "ra", "head"].filter(x => !rd.detached[x]);
+        if (left.length) { const part = left[0]; detach(rd, part, V(0, 1, 0)); popup("CHOMP!", limbCenter(rd, part), "#ff5252"); if (!p.isPlayer) earn(10, limbCenter(rd, part), false); }
+      }
+      if (["la", "ra", "ll", "rl", "head"].every(x => rd.detached[x])) meltBody(rd, dt * 0.8);
+    }
+    if (p.alive && p.blood <= 0) die(p, "eaten by piranhas");
+  }
   else if (k === "ice") {
     p.burn = 0;
     if (p.alive) { p.blood -= (p.isPlayer ? 1.5 : 2.5) * dt; if (p.isPlayer && p.blood <= 0) die(p, "froze solid"); else if (p.blood <= 0) die(p, "froze solid"); }
@@ -2125,11 +2306,30 @@ function liquidEffect(p, q, dt, rd) {
     if (p.alive && p.blood <= 0) die(p, "electrocuted");
   }
 }
+const MAX_AIR = 15;
+// breathing: if your head is under the liquid you run out of air, then you start to drown
+function breathe(p, headPt, dt) {
+  if (!p || !p.alive) return;
+  if (p.air === undefined) p.air = MAX_AIR;
+  if (headPt && poolAt(headPt)) {
+    p.underT = (p.underT || 0) + dt; p.air = Math.max(0, p.air - dt);
+    if (Math.random() < dt * 4) spawnFire(headPt.clone(), V(rand(-0.3, 0.3), 2, rand(-0.3, 0.3)), 0.8, 0.25, false, bubbleMat);
+    if (p.air <= 0) {
+      p.blood -= 20 * dt;
+      if (p.isPlayer) { p.lastHurt = performance.now(); p.bleedStop = false; post.hurt = Math.max(post.hurt, 0.5); }
+      if (p.blood <= 0) die(p, "drowned");
+    }
+  } else { p.underT = 0; p.air = Math.min(MAX_AIR, p.air + dt * 3); }
+}
 function updatePools(dt) {
-  if (mode !== "lab") return;
+  if (mode !== "lab") { player.person.underT = 0; return; }
+  breathe(player.person, player.rd ? (player.rd.detached.head ? null : player.rd.pts[6]) : V(player.pos.x, player.pos.y + 4.9, player.pos.z), dt);
+  for (const rd of ragdolls) if (rd.person && !rd.person.isPlayer && !rd.detached.head) breathe(rd.person, rd.pts[6], dt);
   for (const q of pools) {
     if (q.type === "oil" && q.burnT > 0) { q.burnT -= dt; for (let i = 0; i < 3; i++) spawnFire(V(rand(q.minX, q.maxX), q.surf, rand(q.minZ, q.maxZ)), V(rand(-1, 1), rand(3, 7), rand(-1, 1)), rand(0.5, 1), rand(1, 1.8)); if (Math.random() < dt * 4) spawnFire(V(q.cx + rand(-5, 5), q.surf + 2, q.cz + rand(-5, 5)), V(0, 4, 0), 2, 2, true); }
     if (q.type === "soda" && Math.random() < dt * 12) spawnFire(V(rand(q.minX, q.maxX), q.surf - 0.2, rand(q.minZ, q.maxZ)), V(0, rand(2, 4), 0), 0.6, 0.25, false, bubbleMat);
+    if (q.fish) for (const f of q.fish) { f.a += f.s * dt; f.m.position.set(q.cx + Math.cos(f.a) * f.r, q.surf - f.y + Math.sin(f.a * 3) * 0.2, q.cz + Math.sin(f.a) * f.r); f.m.rotation.y = -f.a + (f.s > 0 ? 0 : Math.PI); }
+    if (q.type === "nitro" && Math.random() < dt * 8) spawnFire(V(rand(q.minX, q.maxX), q.surf + 0.3, rand(q.minZ, q.maxZ)), V(rand(-1, 1), rand(0.5, 1.5), rand(-1, 1)), 1.5, 1.4, false, bubbleMat);
     if (q.type === "zap" && Math.random() < dt * 6) spawnFire(V(rand(q.minX, q.maxX), q.surf, rand(q.minZ, q.maxZ)), V(rand(-4, 4), rand(1, 5), rand(-4, 4)), 0.12, 0.3, false, sparkMat);
   }
   if (player.inPool && player.inPool.T.fizzy && !player.rd && Math.random() < dt * 1.2) player.vy = 18;
@@ -2139,7 +2339,7 @@ function updatePools(dt) {
     if (pq) { splash(ppos, pq); popup(pq.T.icon + " " + pq.T.name + "!", player.pos, hex(pq.T.color)); if (pq.T.bounce && !player.rd) player.vy = 34; }
     player.inPool = pq;
   }
-  if (pq && pp.alive) liquidEffect(pp, pq, dt, null);
+  if (pq && pp.alive) liquidEffect(pp, pq, dt, player.rd || null);
   for (const n of npcs.slice()) {
     const q = poolAt(V(n.pos.x, n.pos.y + 1, n.pos.z));
     if (q !== n.inPool) { n.inPool = q; if (q) { splash(n.pos, q, 15); if (q.T.bounce) { knockDown(n, V(rand(-3, 3), 34, rand(-3, 3)), true); continue; } } }
@@ -2175,16 +2375,137 @@ function clearWorldPeople() {
   burgers.forEach(b => scene.remove(b.m)); burgers.length = 0;
   fires.forEach(f => scene.remove(f.m)); fires.length = 0;
   rockets.forEach(r => scene.remove(r.m)); rockets.length = 0;
+  grenades.forEach(g => scene.remove(g.m)); grenades.length = 0;
   focus = null; player.grab = null; player.inPool = null;
 }
 function enterLab() {
   if (mode !== "lab") { clearWorldPeople(); mode = "lab"; for (let i = 0; i < 12; i++) spawnNPC(); }
-  player.pos.set(LAB.x, 0.3, LAB.z + 78); player.vy = 0; player.heading = Math.PI; camYaw = 0;
+  player.pos.set(LAB.x, 0.3, LAB.z + 102); player.vy = 0; player.heading = Math.PI; camYaw = 0;
   modeBanner.style.display = "block"; popup("🧪 Welcome to the POOL LAB!", player.pos, "#4dd0e1");
 }
 function enterCity() {
   if (mode === "city") return;
   clearWorldPeople(); mode = "city"; player.pos.set(4, 0, 4); modeBanner.style.display = "none";
+}
+// ---- shotgun ----
+function shotgun() {
+  sfx.bang(); setTimeout(sfx.bang, 35); shake = 0.45; post.aberr = 1; player.char.slash = player.char.slashDur = 0.2;
+  const tip = V(); player.tool.userData.tip.getWorldPosition(tip);
+  const fl = new THREE.PointLight(0xffcc55, 4, 14); fl.position.copy(tip); scene.add(fl); setTimeout(() => scene.remove(fl), 70);
+  const targets = rayTargets();
+  for (let i = 0; i < 9; i++) {
+    ray.setFromCamera({ x: rand(-0.07, 0.07), y: rand(-0.07, 0.07) }, camera); ray.far = 60;
+    const hit = ray.intersectObjects(targets, true)[0], wall = ray.intersectObjects(solidMeshes, false)[0];
+    let end = ray.ray.at(60, V()); if (wall) end = wall.point;
+    if (hit && (!wall || hit.distance < wall.distance)) {
+      end = hit.point;
+      const r = resolveHit(hit);
+      if (r) {
+        const vel = ray.ray.direction.clone().multiplyScalar(30); vel.y += 5;
+        let rd = r.rd;
+        if (r.npc) { rd = knockDown(r.npc, vel.clone().multiplyScalar(0.6)); earn(30 + goreBonus(), hit.point, true); }
+        if (rd) earn(hitPart(rd, r.k, vel, 0.6, "gun"), hit.point, false);
+      }
+    }
+    const geo = new THREE.BufferGeometry().setFromPoints([tip, end]);
+    const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xffee88 })); scene.add(line);
+    setTimeout(() => { scene.remove(line); geo.dispose(); }, 50);
+  }
+  for (const n of npcs) if (n.pos.distanceTo(player.pos) < 45 && n.state !== "flee" && n.state !== "fight") { if (n.fighter) startFight(n); else panic(n, player.pos, "bang", 0.3); }
+}
+// ---- grenades ----
+const grenades = [];
+function throwGrenade() {
+  player.char.slash = player.char.slashDur = 0.25; sfx.whoosh();
+  ray.setFromCamera({ x: 0, y: 0 }, camera); ray.far = 120;
+  const hit = ray.intersectObjects(rayTargets().concat(solidMeshes), true)[0];
+  const target = hit ? hit.point : ray.ray.at(40, V());
+  const hand = V(); player.tool.getWorldPosition(hand);
+  // arc it so it lands right where you aimed
+  const d = sub(target, hand), flat = V(d.x, 0, d.z), dist = Math.min(flat.length(), 45);
+  const T = 0.45 + dist / 40, v = flat.normalize().multiplyScalar(dist / T); v.y = (d.y + 0.5 * 30 * T * T) / T;
+  const m = new THREE.Group(); m.add(mesh(new THREE.SphereGeometry(0.35, 12, 10), M(0x3b5323))); m.add(mesh(B(0.12, 0.2, 0.12), M(0x999999), 0, 0.38, 0));
+  m.position.copy(hand); scene.add(m);
+  grenades.push({ m, v, fuse: 2.2 });
+  for (const n of npcs) if (n.pos.distanceTo(target) < 15 && n.state === "walk" && Math.random() < 0.6) { say(n, "grenade", 1.5); panic(n, target, null); }
+}
+function updateGrenades(dt) {
+  for (let i = grenades.length - 1; i >= 0; i--) {
+    const g = grenades[i], p = g.m.position; g.fuse -= dt;
+    g.v.y -= 30 * dt; p.addScaledVector(g.v, dt); g.m.rotation.x += dt * 8;
+    const gy = groundY(p.x, p.z, p.y) + 0.35;
+    if (p.y < gy) { p.y = gy; if (g.v.y < -3) sfx.thud(0.3); g.v.y = Math.abs(g.v.y) * 0.3; g.v.x *= 0.45; g.v.z *= 0.45; }
+    for (const n of npcs) if (Math.abs(p.x - n.pos.x) < 1.2 && Math.abs(p.z - n.pos.z) < 1.2 && p.y < n.pos.y + 5) { g.v.multiplyScalar(0.2); break; }
+    const q = p.clone(); if (collide(q, 0.35)) { g.v.x *= -0.5; g.v.z *= -0.5; p.x = q.x; p.z = q.z; }
+    if (Math.sin(g.fuse * 20) > 0.6) spawnFire(p.clone().setY(p.y + 0.4), V(0, 1, 0), 0.1, 0.25);
+    if (g.fuse <= 0) { scene.remove(g.m); grenades.splice(i, 1); explodeAt(p.clone()); }
+  }
+}
+// ---- freeze ray, ice statues, shattering, gold statues ----
+const ICE_MAT = new THREE.MeshPhongMaterial({ color: 0xaee9ff, shininess: 120, specular: 0xffffff, transparent: true, opacity: 0.88 });
+const GOLD_MAT = new THREE.MeshPhongMaterial({ color: 0xffc83a, shininess: 120, specular: 0xfff3c0, emissive: 0x2a1a00 });
+function iceParts(parts) {
+  if (!parts) return;
+  for (const k in parts) parts[k].traverse(o => { if (o.isMesh) { if (!o.userData.origMat) o.userData.origMat = o.material; o.material = Array.isArray(o.material) ? o.material.map(() => ICE_MAT) : ICE_MAT; } });
+}
+function restoreParts(parts) {
+  if (!parts) return;
+  for (const k in parts) parts[k].traverse(o => { if (o.isMesh && o.userData.origMat) { o.material = o.userData.origMat; delete o.userData.origMat; } });
+}
+function freezePerson(p, time = 7) {
+  if (!p || p.gold) return;
+  if (p.frozen > 0) { p.frozen = Math.max(p.frozen, time); return; }
+  p.frozen = time; p.burn = 0;
+  iceParts(partsOf(p)); sfx.freeze();
+  if (p.npc && p.npc.state !== "dummy") { p.npc.state = "frozen"; p.npc.char.moving = false; }
+  if (p.rd) p.rd.frozen = true;
+  const pos = headPos(p) || player.pos; popup("🧊 FROZEN!", pos, "#aee9ff");
+  if (!p.isPlayer) earn(10, pos, false);
+}
+function goldPerson(p) {
+  if (!p || p.gold) return;
+  p.gold = true; p.frozen = 0; p.burn = 0;
+  const parts = partsOf(p);
+  if (parts) for (const k in parts) parts[k].traverse(o => { if (o.isMesh) { delete o.userData.origMat; o.material = Array.isArray(o.material) ? o.material.map(() => GOLD_MAT) : GOLD_MAT; } });
+  if (p.npc) { p.npc.state = "statue"; p.npc.char.moving = false; }
+  if (p.rd) p.rd.frozen = true;
+  const pos = headPos(p) || player.pos; popup("🪙 SOLID GOLD!", pos, "#ffd54f"); sfx.cash();
+  if (!p.isPlayer) earn(100, pos, false);
+  if (p.alive) die(p, "turned into a solid gold statue");
+}
+function shatter(rd) {
+  const p = rd.person; rd.frozen = false; if (p) p.frozen = 0;
+  for (const k of ["head", "la", "ra", "ll", "rl"]) if (!rd.detached[k]) { rd.detached[k] = true; rd.cons = rd.cons.filter(c => c.tag !== k); if (p) p.inj[k].missing = true; }
+  const c = limbCenter(rd, "torso");
+  for (const i of ALL_PTS) pushRagdoll(rd, [i], V(rand(-10, 10), rand(4, 12), rand(-10, 10)));
+  for (let i = 0; i < 40 && blood.length < 800; i++) { const m = new THREE.Mesh(bloodGeo, ICE_MAT); m.position.copy(c).add(V(rand(-1, 1), rand(-1, 2), rand(-1, 1))); scene.add(m); blood.push({ m, v: V(rand(-9, 9), rand(3, 14), rand(-9, 9)), noSplat: true }); }
+  sfx.shatter(); shake = Math.max(shake, 0.3);
+  popup("💎 SHATTERED!", c.clone().setY(c.y + 2), "#aee9ff");
+  if (p) die(p, "frozen and shattered");
+}
+function updateFrozen(dt) {
+  const list = npcs.map(n => n.person).concat(ragdolls.map(r => r.person));
+  for (const p of list) {
+    if (!p || p.gold || !(p.frozen > 0)) continue;
+    p.frozen -= dt;
+    if (p.frozen <= 0) {
+      restoreParts(partsOf(p));
+      if (p.rd) p.rd.frozen = false;
+      if (p.npc) { panic(p.npc, player.pos, null); say(p.npc, "thawed", 2); }
+    }
+  }
+}
+function freezeBeam() {
+  const tip = V(); player.tool.userData.tip.getWorldPosition(tip);
+  ray.setFromCamera({ x: 0, y: 0 }, camera); ray.far = 80;
+  const hit = ray.intersectObjects(rayTargets(), true)[0], wall = ray.intersectObjects(solidMeshes, false)[0];
+  let end = ray.ray.at(80, V()); if (wall) end = wall.point;
+  if (hit && (!wall || hit.distance < wall.distance)) { end = hit.point; const r = resolveHit(hit); if (r) freezePerson(r.npc ? r.npc.person : r.rd.person); }
+  const geo = new THREE.BufferGeometry().setFromPoints([tip, end]);
+  const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0x8ff0ff })); scene.add(line);
+  setTimeout(() => { scene.remove(line); geo.dispose(); }, 70);
+  spawnFire(end, V(rand(-2, 2), rand(1, 3), rand(-2, 2)), 0.3, 0.4, false, ICE_MAT);
+  if (every("freezesnd", 130)) osc({ f: rand(1400, 1800), f2: 900, dur: 0.12, vol: 0.05 });
 }
 // ---- medkit: heal yourself (click) or someone else (right-click) ----
 function clearDeco(parts) {
@@ -2192,7 +2513,7 @@ function clearDeco(parts) {
   for (const k in parts) { const h = parts[k]; for (const ch of h.children.slice()) if (ch.userData.deco) h.remove(ch); h.userData.wounds = 0; h.userData.coat = 0; }
 }
 function patchUp(p) {
-  for (const k in p.inj) { const I = p.inj[k]; if (I.missing) continue; I.wounds = 0; I.broken = false; I.cracked = false; I.organs = false; }
+  for (const k in p.inj) { const I = p.inj[k]; if (I.missing) continue; I.wounds = 0; I.holes = 0; I.broken = false; I.cracked = false; I.organs = false; }
   p.burn = 0; p.bleed = 0; p.blood = Math.min(100, p.blood + 60);
 }
 function healFx(pos) {
@@ -2248,7 +2569,7 @@ function feed(p) {
   if (p.burgers % 10 === 0) earn(10, headPos(p) || player.pos, false);
 }
 // eat your own burger: get fatter, slower, and explode at 100
-function playerFat() { return Math.min(3, (save.look.fat || 0) + (player.person.burgers || 0) * 0.03); }
+function playerFat() { return Math.min(6, (save.look.fat || 0) + (player.person.burgers || 0) * 0.03); }
 function eatBurger() {
   const p = player.person;
   if (player.eatCD > 0 || player.rd || !p.alive || player.weapon !== 5) return;
@@ -2328,8 +2649,37 @@ function useTool() {
   else if (w === 10) { flame(); player.cd = 0.06; }
   else if (w === 11) { fireRocket(); player.cd = 1.0; }
   else if (w === 12) { healSelf(); player.cd = 1.0; }
+  else if (w === 13) { shotgun(); player.cd = 0.85; }
+  else if (w === 14) { throwGrenade(); player.cd = 0.9; }
+  else if (w === 15) { freezeBeam(); player.cd = 0.07; }
+  else if (w === 16) { swing("laser"); player.cd = 0.35; }
 }
 // ---- getting hurt / ragdolling / dying ----
+function npcShoot(npc) {
+  const c = npc.char; c.slash = c.slashDur = 0.15;
+  const tip = V(); (npc.toolMesh && npc.toolMesh.userData.tip ? npc.toolMesh.userData.tip : c.parts.rla).getWorldPosition(tip);
+  const target = player.rd ? player.rd.pts[0].clone() : player.pos.clone().setY(player.pos.y + rand(2, 5));
+  const dist = tip.distanceTo(target);
+  const hit = Math.random() < Math.max(0.2, 0.65 - dist * 0.015 - (player.moving ? 0.25 : 0));
+  const end = hit ? target : target.clone().add(V(rand(-3, 3), rand(-1, 3), rand(-3, 3)));
+  const fl = new THREE.PointLight(0xffcc55, 2.5, 10); fl.position.copy(tip); scene.add(fl); setTimeout(() => scene.remove(fl), 60);
+  const geo = new THREE.BufferGeometry().setFromPoints([tip, end]);
+  const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xffee88 })); scene.add(line);
+  setTimeout(() => { scene.remove(line); geo.dispose(); }, 60);
+  burst({ dur: 0.08, type: "highpass", f: 1200, vol: Math.max(0.15, 0.8 - dist * 0.02), rev: 0.5 }); osc({ f: 120, f2: 40, dur: 0.2, vol: Math.max(0.1, 0.5 - dist * 0.012) });
+  if (Math.random() < 0.3) say(npc, "gunman", 1.3);
+  if (hit) hurtPlayer(9, "gun", npc);
+  else osc({ f: 2400, f2: 900, dur: 0.12, vol: 0.05, when: 0.05 });   // bullet whizzing past
+}
+// a bullet hole stuck on the body
+function addBulletHole(parts, seg) {
+  const h = parts && parts[seg]; if (!h) return;
+  const [hx, hz] = SEG_HALF[seg] || [0.5, 0.5], side = Math.random() < 0.6 ? 1 : -1;
+  const g = new THREE.Group();
+  g.add(mesh(B(0.26, 0.26, 0.03), WET(0x7a0000), 0, 0, 0, false)); g.add(mesh(B(0.12, 0.12, 0.05), M(0x0a0505), 0, 0, 0.01, false));
+  g.position.set(rand(-hx * 0.55, hx * 0.55), rand(-0.3, 0.3), side * (hz + 0.025)); if (side < 0) g.rotation.y = Math.PI;
+  g.userData.deco = true; h.add(g);
+}
 function hurtPlayer(dmg, kind, npc) {
   const p = player.person; if (!p.alive) return;
   const dir = sub(player.pos, npc.pos).setY(0).normalize();
@@ -2341,6 +2691,14 @@ function hurtPlayer(dmg, kind, npc) {
     if (limb !== "torso" && limb !== "head" && Math.random() < 0.35) breakBone(p, limb);
     else if (limb === "head" && Math.random() < 0.3) I.cracked = true;
     if (Math.random() < 0.5) { I.wounds = (I.wounds || 0) + 1; addWound(parts, seg); }
+  } else if (kind === "gun") {
+    sfx.squish();
+    I.wounds = (I.wounds || 0) + 1; I.holes = (I.holes || 0) + 1;
+    addBulletHole(parts, seg); addWound(parts, seg);
+    if (limb === "head") { p.blood = Math.max(0, p.blood - 18); I.cracked = true; popup("HEADSHOT!", player.pos.clone().setY(player.pos.y + 4), "#ff4444"); }
+    else if (limb !== "torso" && Math.random() < 0.25) breakBone(p, limb);
+    const hp = parts && parts[seg] ? parts[seg].getWorldPosition(V()) : player.pos.clone().setY(player.pos.y + 3);
+    spawnBlood(hp, dir.clone().multiplyScalar(6), 14, 3);
   } else { sfx.punch(); if (Math.random() < 0.35) { I.wounds = (I.wounds || 0) + 1; addWound(parts, seg); } }
   sfx.hurt();
   spawnBlood(player.pos.clone().setY(player.pos.y + 3.5), dir.clone().multiplyScalar(4), 5);
@@ -2360,6 +2718,7 @@ function ragdollPlayer(vel) {
 }
 function getUpPlayer() {
   const p = player.person; if (!player.rd || !p.alive) return;
+  if (p.inj.ll.missing || p.inj.rl.missing) { popup("You can't stand up with a missing leg!", player.pos.clone().setY(player.pos.y + 3), "#ff8888"); return; }
   const pos = player.rd.pts[1].clone(); pos.y = groundY(pos.x, pos.z, pos.y + 0.5);
   removeRagdoll(player.rd); player.rd = null; p.down = false;
   player.pos.copy(pos); collide(player.pos, 1.1); player.vy = 0;
@@ -2376,8 +2735,8 @@ function respawn() {
   if (player.rd) removeRagdoll(player.rd);
   player.rd = null; player.grab = null;
   player.person = newPlayerPerson();
-  if (mode === "lab") player.pos.set(LAB.x, 0.3, LAB.z + 78); else player.pos.set(4, 0, 4);
-  player.vy = 0; player.kb.set(0, 0, 0); player.inPool = null;
+  if (mode === "lab") player.pos.set(LAB.x, 0.3, LAB.z + 102); else player.pos.set(4, 0, 4);
+  player.vy = 0; player.kb.set(0, 0, 0); player.inPool = null; player.person.air = MAX_AIR; player.person.underT = 0;
   buildPlayerChar();
   document.getElementById("death").classList.remove("open");
   document.getElementById("bRag").classList.remove("on");
@@ -2386,10 +2745,21 @@ document.getElementById("respawnBtn").onclick = respawn;
 function updatePlayerHealth(dt) {
   const p = player.person; if (!p.alive) return;
   const since = (performance.now() - (p.lastHurt || 0)) / 1000;
-  if (since > 8) p.bleedStop = true;
+  const shot = Object.values(p.inj).some(I => I.holes && !I.missing);
+  if (since > 8 && !shot) p.bleedStop = true;
   p.bleed = p.bleedStop ? 0 : bleedRate(p) * 0.3;
   p.blood = Math.max(0, p.blood - p.bleed * dt);
-  if (since > 8 && p.blood < 100) p.blood = Math.min(100, p.blood + 3 * dt);
+  if (since > 8 && p.bleedStop && p.blood < 100) p.blood = Math.min(100, p.blood + 3 * dt);
+  // see yourself bleeding: drips from your wounds and drops on the ground
+  if (p.bleed > 0.01 && Math.random() < dt * (3 + p.bleed * 6)) {
+    const hurt = Object.keys(p.inj).filter(k => (p.inj[k].wounds || p.inj[k].holes) && !p.inj[k].missing);
+    if (hurt.length) {
+      const k = pick(hurt), parts = partsOf(p), seg = pick(LIMB_SEGS[k]);
+      const pos = player.rd ? limbCenter(player.rd, k) : parts && parts[seg] ? parts[seg].getWorldPosition(V()) : player.pos.clone().setY(player.pos.y + 3);
+      spawnBlood(pos, V(rand(-0.5, 0.5), 0, rand(-0.5, 0.5)), 1, 0.6);
+      if (Math.random() < 0.15) splat(player.pos.x + rand(-0.6, 0.6), player.pos.z + rand(-0.6, 0.6), rand(0.15, 0.35), player.pos.y);
+    }
+  }
   const tgt = p.base + (100 - p.blood) * 1.2 + (since < 3 ? 30 : 0);
   p.hr += (tgt - p.hr) * Math.min(1, dt);
   if (p.blood <= 0) die(p, "bled out");
@@ -2419,7 +2789,7 @@ addEventListener("keydown", e => {
   if (e.code === "Escape" && shopOpen) { openMenu(null); return; }
   if (shopOpen) return;
   keys[e.code] = true;
-  const n = +e.key; if (e.code === "KeyK") setWeapon(12); else if (e.key === "0") setWeapon(9); else if (e.key === "-") setWeapon(10); else if (e.key === "=") setWeapon(11); else if (n >= 1 && n <= 9) setWeapon(n - 1);
+  const n = +e.key; if (e.code === "KeyK") setWeapon(12); else if (e.code === "KeyZ") setWeapon(13); else if (e.code === "KeyX") setWeapon(14); else if (e.code === "KeyN") setWeapon(15); else if (e.code === "KeyV") setWeapon(16); else if (e.key === "0") setWeapon(9); else if (e.key === "-") setWeapon(10); else if (e.key === "=") setWeapon(11); else if (n >= 1 && n <= 9) setWeapon(n - 1);
   if (e.code === "KeyR" && !e.repeat) toggleRagdoll();
   if (e.code === "KeyF" && !e.repeat) toggleFP();
   if (e.code === "KeyC") cleanUp();
@@ -2483,7 +2853,7 @@ document.getElementById("bSpawn").onclick = () => openMenu("spawn");
 document.getElementById("shopClose").onclick = () => openMenu(null);
 const roofs = () => buildings.filter(b => b.roof);
 function teleport(p) {
-  if (mode === "lab" && Math.abs(p.z - LAB.z) > 120) enterCity();
+  if (mode === "lab" && Math.abs(p.z - LAB.z) > 150) enterCity();
   if (player.rd) getUpPlayer();
   player.pos.copy(p); player.vy = 0;
   popup("Teleported!", player.pos, "#d6b8ff"); sfx.buy();
@@ -2509,13 +2879,14 @@ const MENUS = {
     ["🌳 Park", "The park in the middle of town", () => teleport(V(28 + rand(-6, 6), 0.3, 28 + rand(-6, 6)))],
     ["🛣️ Busy Street", "Somewhere with lots of people", () => { let best = null, bc = -1; for (const n of npcs) { const c = npcs.filter(m => m.pos.distanceTo(n.pos) < 20).length; if (c > bc && n.pos.y < 1) { bc = c; best = n; } } const p = best ? best.pos.clone().add(V(4, 0, 4)) : V(4, 0, 4); collide(p, 1.1); teleport(p); }],
     ["🏠 Back to Start", "Where you first spawned in the city", () => teleport(V(4, 0, 4))],
-    ["🧪 Pool Lab", "12 pools: milk, acid, lava, honey, gravy, slime, water, ice, oil, soda, chocolate, electric", () => enterLab()]
+    ["🧪 Pool Lab", "16 pools: milk, acid, lava, honey, gravy, slime, water, ice, oil, soda, chocolate, electric, piranhas, nitrogen, gold, blood", () => enterLab()]
   ] },
   spawn: { title: "➕ Spawn", items: [
     ["🧍 Dummy", "A grey dummy that just stands there", () => spawnFront(1, true)],
     ["🧍🧍🧍 5 Dummies", "A line of dummies to test your gore", () => spawnFront(5, true)],
     ["👥 Crowd of 10", "10 people walking around you", () => spawnFront(10, false)],
     ["🍔 Hungry Guy", "Someone who already ate 85 burgers", () => spawnFront(1, false, 85)],
+    ["🔫 Gunman", "Someone with a gun who shoots at you", () => { spawnFront(1, false); const n = npcs[npcs.length - 1]; n.fighter = n.person.fighter = true; n.weapon = n.person.weapon = "gun"; if (n.toolMesh && n.toolMesh.parent) n.toolMesh.parent.remove(n.toolMesh); n.toolMesh = makeGun(); n.char.parts.rla.add(n.toolMesh); n.char.holding = 1; say(n, "gunman"); startFight(n); }],
     ["🥊 Angry Fighter", "Someone who wants to fight you", () => { spawnFront(1, false); const n = npcs[npcs.length - 1]; n.fighter = n.person.fighter = true; say(n, "bring"); startFight(n); }],
     ["🧹 Remove Spawned", "Delete everyone you spawned", () => { for (const n of npcs.filter(n => n.spawned)) { scene.remove(n.char.group); clearLabels(n.person); n.person.npc = null; npcs.splice(npcs.indexOf(n), 1); } }],
     ["🧽 Clean Up Mess", "Remove all bodies and gore (C)", () => cleanUp()]
@@ -2625,7 +2996,7 @@ function renderAvatarRows() {
   colorRow("Shirt", "shirt", SHIRTS); colorRow("Pants", "pants", PANTS);
 }
 document.getElementById("randLook").onclick = () => { save.look = randomLook(); persist(); player.person.look = save.look; buildPlayerChar(); renderAvatarRows(); };
-const SETTING_INFO = [["shaders", "✨ Shaders (glow, colours, film grain)"], ["shadows", "🌑 Shadows"], ["names", "🏷️ Name tags"], ["blood", "🩸 Blood"], ["organs", "🫀 Organs & guts"], ["mouseLock", "🖱️ Mouse look (click to lock)"]];
+const SETTING_INFO = [["shaders", "✨ Shaders (colours, film grain)"], ["shadows", "🌑 Shadows"], ["names", "🏷️ Name tags"], ["blood", "🩸 Blood"], ["organs", "🫀 Organs & guts"], ["mouseLock", "🖱️ Mouse look (click to lock)"]];
 function renderSettings() {
   const el = document.getElementById("settingRows"); el.innerHTML = "";
   const vr = document.createElement("div"); vr.className = "srow";
@@ -2693,10 +3064,12 @@ function updateGore(dt) {
 }
 
 // ================= player update + camera =================
+const joy = { id: null, sx: 0, sy: 0, x: 0, y: 0 }, look = { id: null, lx: 0, ly: 0 };
 function moveInput() {
   const f = V(-Math.sin(camYaw), 0, -Math.cos(camYaw)), r = V(Math.cos(camYaw), 0, -Math.sin(camYaw)), mv = V();
   if (keys.KeyW || keys.ArrowUp) mv.add(f); if (keys.KeyS || keys.ArrowDown) mv.sub(f);
   if (keys.KeyD || keys.ArrowRight) mv.add(r); if (keys.KeyA || keys.ArrowLeft) mv.sub(r);
+  if (joy.id !== null && Math.hypot(joy.x, joy.y) > 0.1) { mv.addScaledVector(f, -joy.y).addScaledVector(r, joy.x); return mv.clampLength(0, 1); }
   return mv.lengthSq() ? mv.normalize() : mv;
 }
 function updatePlayer(dt) {
@@ -2715,12 +3088,12 @@ function updatePlayer(dt) {
     return;
   }
   if (inMenu) { player.heading += dt * 0.6; c.moving = false; c.air = false; c.group.position.copy(player.pos); c.group.rotation.y = player.heading; animChar(c, dt); return; }
-  if (mouseDown && (player.weapon === 1 || player.weapon === 5 || player.weapon === 7 || player.weapon === 10)) useTool();
+  if (mouseDown && (player.weapon === 1 || player.weapon === 5 || player.weapon === 7 || player.weapon === 10 || player.weapon === 15)) useTool();
   player.eatCD = (player.eatCD || 0) - dt;
   if (rightDown) eatBurger();
   c.grabbing = !!player.grab;
   const mv = moveInput();
-  let sp = keys.ShiftLeft || keys.ShiftRight ? 16 : 10;
+  let sp = keys.ShiftLeft || keys.ShiftRight || (joy.id !== null && Math.hypot(joy.x, joy.y) > 0.92) ? 16 : 10;
   if (p.inj.ll.broken || p.inj.rl.broken) sp *= 0.45;
   sp *= Math.max(0.3, 1 - (player.char.fat || 0) * 0.3);
   if (player.inPool) sp *= player.inPool.T.slow;
@@ -2773,7 +3146,37 @@ function updateCamera(dt) {
   if (shake > 0) { camera.position.add(V(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(shake * 0.6)); shake = Math.max(0, shake - dt * 1.5); }
 }
 const hpFill = document.getElementById("hpFill"), hpTxt = document.getElementById("hpTxt");
+// small picture of your own body: green = OK, orange = wounded, red = broken, black = LOST
+const bodySvgEl = document.getElementById("bodySvg"), bodyLbl = document.getElementById("bodyLbl");
+let bodySig = "";
+function renderBodyHud() {
+  const p = player.person, I = p.inj;
+  const sig = JSON.stringify(I) + p.alive + (p.burn > 0) + (p.frozen > 0);
+  if (sig === bodySig) return; bodySig = sig;
+  const col = k => { const x = I[k]; if (x.missing) return "#111"; if (x.broken || x.cracked) return "#ff2a2a"; if (x.wounds || x.organs) return "#ffa53a"; return p.burn > 0 ? "#ffcf6a" : "#8fe39a"; };
+  const part = (k, x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="${col(k)}" stroke="#000" stroke-width="1.5"/>` +
+    (I[k].missing ? `<text x="${x + w / 2}" y="${y + h / 2 + 2.5}" font-size="7" font-weight="bold" fill="#fff" text-anchor="middle"${h > w ? ` transform="rotate(-90 ${x + w / 2} ${y + h / 2})"` : ""}>LOST</text>` : "") +
+    (!I[k].missing && I[k].holes ? Array.from({ length: Math.min(3, I[k].holes) }, (_, i) => `<circle cx="${x + w / 2 + (i % 2 ? 2.5 : -2.5) * (w > 14 ? 2 : 0.6)}" cy="${y + 4 + i * Math.min(9, (h - 8) / 3)}" r="2.6" fill="#111" stroke="#c00" stroke-width="1.3"/>`).join("") : "") +
+    (I[k].broken && !I[k].missing ? `<polyline points="${x + 1},${y + h / 2 - 2} ${x + w / 2},${y + h / 2 + 2} ${x + w - 1},${y + h / 2 - 2}" fill="none" stroke="#fff" stroke-width="1.5"/>` : "");
+  bodySvgEl.innerHTML = `<svg viewBox="0 0 64 104" width="64" height="104" style="opacity:${p.alive ? 1 : 0.5}">${part("head", 22, 2, 20, 18)}${part("torso", 18, 22, 28, 34)}${part("la", 5, 22, 11, 33)}${part("ra", 48, 22, 11, 33)}${part("ll", 19, 58, 12, 42)}${part("rl", 33, 58, 12, 42)}</svg>`;
+  bodyLbl.textContent = p.alive ? "YOU" : "💀 YOU";
+}
+const bodyStatus = document.getElementById("bodyStatus");
+let lastStatus = "";
+function renderBodyStatus() {
+  const p = player.person, out = [];
+  if (p.alive) {
+    if (p.bleed > 0.01) out.push(`<div>🩸 Bleeding out in ${Math.max(1, Math.ceil(p.blood / p.bleed))}s</div>`);
+    if (p.underT > 0) out.push(p.air > 0 ? `<div class="air">😮 Suffocating in ${Math.ceil(p.air)}s</div>` : `<div class="air">😵 Suffocating!</div>`);
+    if (p.burn > 0) out.push(`<div>🔥 On fire!</div>`);
+    if (p.frozen > 0) out.push(`<div class="air">🧊 Frozen</div>`);
+    if (p.burgers > 0) { const left = Math.max(0, 100 - p.burgers); out.push(`<div class="fat">🍔 Exploding in ${left} burger${left === 1 ? "" : "s"}</div>`); }
+  }
+  const html = out.join("");
+  if (html !== lastStatus) { bodyStatus.innerHTML = html; lastStatus = html; }
+}
 function updateHUD(dt) {
+  renderBodyHud(); renderBodyStatus();
   document.getElementById("money").textContent = "$" + money.toLocaleString();
   const comboEl = document.getElementById("combo");
   comboEl.style.opacity = comboT > 0 && combo > 1 ? 1 : 0; comboEl.textContent = "COMBO x" + combo + "!";
@@ -2787,6 +3190,64 @@ function updateHUD(dt) {
   }
 }
 
+// ================= iPad / touch controls =================
+// left side of the screen = joystick, swipe the right side = look, big buttons = use / jump / eat-heal
+let touchMode = false;
+const touchUI = document.getElementById("touchUI"), joyBase = document.getElementById("joyBase"), joyKnob = document.getElementById("joyKnob"), joyHint = document.getElementById("joyHint");
+function enableTouch() {
+  if (touchMode) return;
+  touchMode = true; document.body.classList.add("touch"); lockFailed = true; refreshLockHint();
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.setSize(innerWidth, innerHeight);
+  const pr = renderer.getPixelRatio(); rt.setSize(innerWidth * pr, innerHeight * pr);
+  setTimeout(() => { if (joyHint) joyHint.style.display = "none"; }, 9000);
+}
+if (matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints > 1 && /Macintosh|iPad/.test(navigator.userAgent))) enableTouch();
+const uiTouch = el => el && el.closest && el.closest("button, .slot, #mainMenu, #shop, #vitals, #death, #hpBox, #side, input, #hotbar");
+addEventListener("touchstart", e => {
+  enableTouch(); audio();
+  if (inMenu || shopOpen) return;
+  for (const t of e.changedTouches) {
+    if (uiTouch(t.target)) continue;
+    if (t.clientX < innerWidth * 0.42 && joy.id === null) {
+      joy.id = t.identifier; joy.sx = t.clientX; joy.sy = t.clientY; joy.x = joy.y = 0;
+      joyBase.style.display = "block"; joyBase.style.left = t.clientX + "px"; joyBase.style.top = t.clientY + "px"; joyKnob.style.transform = "translate(0,0)";
+    } else if (look.id === null) { look.id = t.identifier; look.lx = t.clientX; look.ly = t.clientY; }
+    e.preventDefault();
+  }
+}, { passive: false });
+addEventListener("touchmove", e => {
+  let used = false;
+  for (const t of e.changedTouches) {
+    if (t.identifier === joy.id) {
+      let dx = t.clientX - joy.sx, dy = t.clientY - joy.sy; const d = Math.hypot(dx, dy), R = 60;
+      if (d > R) { dx *= R / d; dy *= R / d; }
+      joy.x = dx / R; joy.y = dy / R; joyKnob.style.transform = `translate(${dx}px,${dy}px)`; used = true;
+    } else if (t.identifier === look.id) {
+      camYaw -= (t.clientX - look.lx) * 0.0075;
+      camPitch = clamp(camPitch + (t.clientY - look.ly) * 0.005, player.fp ? -1.4 : -0.35, player.fp ? 1.4 : 1.2);
+      look.lx = t.clientX; look.ly = t.clientY; used = true;
+    }
+  }
+  if (used) e.preventDefault();
+}, { passive: false });
+function touchEnd(e) {
+  for (const t of e.changedTouches) {
+    if (t.identifier === joy.id) { joy.id = null; joy.x = joy.y = 0; joyBase.style.display = "none"; }
+    if (t.identifier === look.id) look.id = null;
+  }
+}
+addEventListener("touchend", touchEnd); addEventListener("touchcancel", touchEnd);
+function holdBtn(id, down, up) {
+  const b = document.getElementById(id);
+  b.addEventListener("touchstart", e => { e.preventDefault(); e.stopPropagation(); audio(); b.classList.add("down"); if (!inMenu && !shopOpen) down(); }, { passive: false });
+  const end = e => { e.preventDefault(); b.classList.remove("down"); up(); };
+  b.addEventListener("touchend", end, { passive: false }); b.addEventListener("touchcancel", end, { passive: false });
+  b.addEventListener("mousedown", e => { e.preventDefault(); if (!inMenu && !shopOpen) down(); }); b.addEventListener("mouseup", () => up());
+}
+holdBtn("tUse", () => { mouseDown = true; if (player.weapon === 6) tryGrab(); else useTool(); }, () => { mouseDown = false; if (player.grab) releaseGrab(true); });
+holdBtn("tJump", () => { keys.Space = true; }, () => { keys.Space = false; });
+holdBtn("tAlt", () => { rightDown = true; if (player.weapon === 12) healOther(); else eatBurger(); }, () => { rightDown = false; });
+
 // ================= setup + loop =================
 buildPlayerChar();
 for (let i = 0; i < 40; i++) spawnNPC(player.pos);
@@ -2797,13 +3258,14 @@ function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
   if (!shopOpen) {
     updatePlayer(dt); updatePlayerHealth(dt); updateNPCs(dt); updateRagdolls(dt); updatePersons(dt); updateGore(dt); updateBurgers(dt);
-    updatePools(dt); updateBurning(dt); updateFires(dt); updateRockets(dt);
+    updatePools(dt); updateBurning(dt); updateFires(dt); updateRockets(dt); updateGrenades(dt); updateFrozen(dt);
     spawnT -= dt; if (npcs.filter(n => !n.spawned).length < (mode === "lab" ? 12 : 40) && spawnT <= 0) { spawnNPC(player.pos); spawnT = 0.6; }
     comboT -= dt;
   }
   updateCamera(dt);
   sun.position.set(player.pos.x + 40, 80, player.pos.z + 25); sun.target.position.copy(player.pos);
   updateHUD(dt); updateSawSound(dt);
+  touchUI.classList.toggle("hidden", inMenu || shopOpen || document.getElementById("death").classList.contains("open"));
   updateLabels(shopOpen ? 0 : dt); renderVitals(shopOpen ? 0 : dt);
   renderFrame(dt);
 }
