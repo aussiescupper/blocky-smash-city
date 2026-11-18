@@ -197,7 +197,7 @@
   <h1>BLOCKY<br><span>SMASH CITY</span></h1>
   <div class="mpanel on" id="mpHome">
     <button class="mbtn play" id="playBtn">▶ PLAY</button>
-    <button class="mbtn" id="labBtn" style="background:#00acc1">🧪 POOL LAB <small style="font-size:13px">(16 pools)</small></button>
+    <button class="mbtn" id="labBtn" style="background:#00acc1">🧪 POOL LAB <small style="font-size:13px">(20 pools)</small></button>
     <button class="mbtn" data-go="mpAvatar">👕 AVATAR EDITOR</button>
     <button class="mbtn" data-go="mpSettings">⚙️ SETTINGS</button>
     <button class="mbtn" data-go="mpControls">🎮 CONTROLS</button>
@@ -267,11 +267,19 @@ const HAIRS = [0x3b2314, 0x111111, 0xd9a441, 0x6b3e1f, 0xaa3311, 0xeeeeee, 0x3a6
 const FACES = ["smile", "grin", "cool", "angry", "derp"];
 const HAIR_STYLES = ["short", "long", "spiky", "bald"];
 const HATS = ["none", "cap", "tophat", "beanie", "crown"];
-const DEFAULT_LOOK = { skin: 0xf5cd30, shirt: 0x1e66d0, pants: 0x2fa84f, hair: 0x3b2314, hairStyle: "short", hat: "cap", hatColor: 0xd8322b, face: "smile", fat: 0 };
+const BODY_TYPE_NAMES = ["normal", "muscular", "skinny", "big", "short"];
+const BODY_TYPES = {
+  normal: {},
+  muscular: { ut: [1.25, 1.05, 1.2], ua: [1.35, 1, 1.35], la: [1.2, 1, 1.2], ul: [1.15, 1, 1.15], ll: [1.1, 1, 1.1], sh: 1.85, hip: 0.56 },
+  skinny: { ut: [0.78, 1, 0.8], lt: [0.8, 1, 0.85], ua: [0.7, 1, 0.7], la: [0.7, 1, 0.7], ul: [0.72, 1, 0.72], ll: [0.72, 1, 0.72], sh: 1.38, hip: 0.42 },
+  big: { scale: 1.18 },
+  short: { scale: 0.75 }
+};
+const DEFAULT_LOOK = { skin: 0xf5cd30, shirt: 0x1e66d0, pants: 0x2fa84f, hair: 0x3b2314, hairStyle: "short", hat: "cap", hatColor: 0xd8322b, face: "smile", fat: 0, bodyType: "normal" };
 const DUMMY_LOOK = { skin: 0xa3a2a5, shirt: 0x8f8e91, pants: 0x6d6c70, hair: 0x6d6c70, hairStyle: "bald", hat: "none", hatColor: 0, face: "smile", fat: 0 };
 function randomLook() {
   return { skin: pick(SKINS.slice(0, 7)), shirt: pick(SHIRTS), pants: pick(PANTS), hair: pick(HAIRS.slice(0, 6)), hairStyle: pick(["short", "short", "long", "spiky", "bald"]),
-    hat: Math.random() < 0.35 ? pick(["cap", "cap", "beanie", "tophat"]) : "none", hatColor: pick(SHIRTS), face: pick(["smile", "smile", "grin", "cool", "derp"]), fat: Math.random() < 0.25 ? +rand(0.1, 0.45).toFixed(2) : 0 };
+    hat: Math.random() < 0.35 ? pick(["cap", "cap", "beanie", "tophat"]) : "none", hatColor: pick(SHIRTS), face: pick(["smile", "smile", "grin", "cool", "derp"]), bodyType: pick(["normal", "normal", "normal", "muscular", "skinny", "big", "short"]), fat: Math.random() < 0.25 ? +rand(0.1, 0.45).toFixed(2) : 0 };
 }
 const LIMBS = [["head", "Head"], ["torso", "Torso"], ["la", "Left Arm"], ["ra", "Right Arm"], ["ll", "Left Leg"], ["rl", "Right Leg"]];
 const MAX_LVL = 10;
@@ -288,7 +296,7 @@ const FAT_TIERS = [1, 1.5, 2, 3, 4, 5, 6], FAT_COSTS = [500, 1500, 4000, 8000, 1
 if (save.fatMax > 6) save.fatMax = 6;
 if (save.look && save.look.fat > 6) save.look.fat = 6;
 function persist() { try { localStorage.setItem("blockySmashSave3", JSON.stringify(save)); } catch (e) {} }
-const GAME_VERSION = "2.1.0";
+const GAME_VERSION = "2.2.0";
 let mode = "city";   // "city" or "lab" (Pool Lab)
 
 // ================= renderer / sky / post shader =================
@@ -429,7 +437,7 @@ const buildings = [], blocks = [], solidMeshes = [];
   }
 }
 // ================= POOL LAB =================
-const LAB = { x: 0, z: 1000, half: 112 };
+const LAB = { x: 0, z: 1000, half: 132 };
 const POOL_TYPES = {
   milk:  { name: "MILK",  icon: "🥛", color: 0xf6f4ec, op: 0.93, emissive: 0x000000, buoy: 37, drag: 1.5, slow: 0.65 },
   acid:  { name: "ACID",  icon: "☢️", color: 0x7dff3a, op: 0.72, emissive: 0x2a7a00, buoy: 30, drag: 2, slow: 0.7 },
@@ -446,7 +454,11 @@ const POOL_TYPES = {
   piranha: { name: "PIRANHAS", icon: "🐟", color: 0x2a7fbf, op: 0.6, emissive: 0x000000, buoy: 36, drag: 1.4, slow: 0.6 },
   nitro: { name: "NITROGEN", icon: "🧪", color: 0xdfe9ff, op: 0.5, emissive: 0x223344, buoy: 33, drag: 2, slow: 0.4 },
   gold:  { name: "GOLD", icon: "🪙", color: 0xffc83a, op: 0.96, emissive: 0x3a2600, buoy: 28, drag: 4, slow: 0.3 },
-  blood: { name: "BLOOD", icon: "🩸", color: 0x8a0000, op: 0.95, emissive: 0x000000, buoy: 35, drag: 1.6, slow: 0.6 }
+  blood: { name: "BLOOD", icon: "🩸", color: 0x8a0000, op: 0.95, emissive: 0x000000, buoy: 35, drag: 1.6, slow: 0.6 },
+  shark: { name: "SHARK", icon: "🦈", color: 0x1565c0, op: 0.62, emissive: 0x000000, buoy: 36, drag: 1.3, slow: 0.6 },
+  helium: { name: "HELIUM", icon: "🎈", color: 0xf8bbd0, op: 0.45, emissive: 0x000000, buoy: 60, drag: 0.8, slow: 0.8 },
+  paint: { name: "PAINT", icon: "🎨", color: 0xff4fa3, op: 0.92, emissive: 0x000000, buoy: 35, drag: 1.5, slow: 0.6 },
+  hole:  { name: "BLACK HOLE", icon: "🕳️", color: 0x120020, op: 0.97, emissive: 0x2a0050, buoy: 0, drag: 0.5, slow: 0.4 }
 };
 const pools = [];
 {
@@ -464,7 +476,7 @@ const pools = [];
   }
   const keys = Object.keys(POOL_TYPES);
   keys.forEach((k, i) => {
-    const T = POOL_TYPES[k], cx = L.x + (i % 4 - 1.5) * 40, cz = L.z + (Math.floor(i / 4) - 1.5) * 45 - 5, dir = 1;
+    const T = POOL_TYPES[k], cx = L.x + (i % 4 - 1.5) * 40, cz = L.z + (Math.floor(i / 4) - 2) * 45 - 5, dir = 1;
     const pool = { type: k, T, cx, cz, surf: FL + SURF, minX: cx - H + 1, maxX: cx + H - 1, minZ: cz - H + 1, maxZ: cz + H - 1 };
     for (const [x, z, w, d] of [[0, H - 0.5, H * 2, 1], [0, -H + 0.5, H * 2, 1], [H - 0.5, 0, 1, H * 2 - 2], [-H + 0.5, 0, 1, H * 2 - 2]]) {
       const r = mesh(B(w, RIM, d), M(0xf3f3f3), cx + x, FL + RIM / 2, cz + z); r.receiveShadow = true; scene.add(r); solidMeshes.push(r);
@@ -485,11 +497,17 @@ const pools = [];
     // sign
     const sc = document.createElement("canvas"); sc.width = 256; sc.height = 96; const sx = sc.getContext("2d");
     sx.fillStyle = hex(T.color); sx.fillRect(0, 0, 256, 96); sx.fillStyle = "#111"; sx.fillRect(5, 5, 246, 86);
-    sx.fillStyle = hex(T.color === 0x1a1a14 ? 0x888866 : T.color); sx.font = (T.name.length > 6 ? "bold 34px" : "bold 46px") + " Trebuchet MS"; sx.textAlign = "center"; sx.textBaseline = "middle"; sx.fillText(T.icon + " " + T.name, 128, 50);
+    sx.fillStyle = hex(T.color === 0x1a1a14 ? 0x888866 : T.color === 0x120020 ? 0xb388ff : T.color); sx.font = (T.name.length > 6 ? "bold 34px" : "bold 46px") + " Trebuchet MS"; sx.textAlign = "center"; sx.textBaseline = "middle"; sx.fillText(T.icon + " " + T.name, 128, 50);
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(8, 3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc) }));
     sign.position.set(cx, FL + RIM + 4.5, cz - dir * (H - 0.5)); if (dir < 0) sign.rotation.y = Math.PI; scene.add(sign);
     for (const px of [-3.6, 3.6]) scene.add(mesh(B(0.3, RIM + 3.5, 0.3), M(0x777777), cx + px, FL + RIM + 1.5, cz - dir * (H - 0.5)));
     if (T.emissive && (k === "lava" || k === "acid")) { const pl = new THREE.PointLight(T.color, 1.0, 26); pl.position.set(cx, FL + SURF + 2, cz); scene.add(pl); }
+    if (k === "shark") {
+      const sh = new THREE.Group(); sh.add(mesh(B(1.0, 0.9, 3.2), M(0x78909c), 0, 0, 0, false)); sh.add(mesh(B(0.9, 0.3, 2.6), M(0xeceff1), 0, -0.4, 0.1, false));
+      sh.add(mesh(B(0.15, 1.1, 0.9), M(0x607d8b), 0, 0.9, -0.2, false)); sh.add(mesh(B(0.15, 1.0, 0.6), M(0x607d8b), 0, 0.2, -1.8, false));
+      sh.add(mesh(B(0.6, 0.12, 0.4), M(0xffffff), 0, -0.15, 1.55, false)); scene.add(sh);
+      pool.fish = [{ m: sh, a: 0, r: 4, s: 1.2, y: 1.6 }];
+    }
     if (k === "piranha") { pool.fish = []; for (let f = 0; f < 9; f++) { const fm = new THREE.Group(); fm.add(mesh(B(0.35, 0.3, 0.8), M(f % 2 ? 0xd84315 : 0x9e9e9e), 0, 0, 0, false)); fm.add(mesh(B(0.06, 0.3, 0.3), M(0x555555), 0, 0, -0.5, false)); scene.add(fm); pool.fish.push({ m: fm, a: rand(0, 6.28), r: rand(1.5, 5.5), s: rand(1.2, 2.5) * (f % 2 ? 1 : -1), y: rand(0.8, 2.4) }); } }
     pools.push(pool);
   });
@@ -524,7 +542,7 @@ function freeSpot(from, minDist) {
     if (collide(p.clone(), 1.5)) continue;
     return p;
   }
-  return mode === "lab" ? V(LAB.x + rand(-20, 20), 0.3, LAB.z + 100) : V(10, 0, 10);
+  return mode === "lab" ? V(LAB.x + rand(-20, 20), 0.3, LAB.z + 120) : V(10, 0, 10);
 }
 
 // ================= faces =================
@@ -625,6 +643,7 @@ function makeChar(o) {
   }
   scene.add(g);
   const ch = { group: g, parts, piv, faceMesh: hm, faces, look: o, t: rand(0, 10), moving: false, speed: 0, air: false, pose: null, holding: 0, slash: 0, slashDur: 0.3, fat: 0, broken: {}, grabbing: false };
+  applyBodyType(ch, o.bodyType);
   ch.utBoxes = parts.ut.children.slice(0, 4); ch.armBoxes = [...parts.lua.children, ...parts.rua.children, ...parts.lla.children, ...parts.rla.children];
   ch.legBoxes = [parts.lul.children[0], parts.rul.children[0], parts.lll.children[0], parts.rll.children[0]]; ch.shoes = [parts.lll.children[1], parts.rll.children[1]]; ch.neckMesh = parts.head.children[1];
   addFatBits(ch, o); if (o.fat) setCharFat(ch, o.fat);
@@ -714,7 +733,7 @@ function setCharFat(c, f) {
   for (const m of c.shoes) m.scale.set(1 + f * 0.25, 1, 1 + f * 0.15);
   if (round) { F.body.geometry.dispose(); F.body.geometry = bodyGeo(fBody, c.shirtHex, c.skinHex); F.body.position.z = fBody * 0.06; }
   const hf = Math.min(f, 1.8);   // hips/waist stop spreading sideways on huge sizes; the belly takes the rest
-  P.lt.scale.set(1 + hf * 0.2, 1, 1 + hf * 0.25);
+  const lb = c.ltBase || [1, 1, 1]; P.lt.scale.set(lb[0] * (1 + hf * 0.2), lb[1], lb[2] * (1 + hf * 0.25));
   for (const m of [F.upL, F.upR]) sc(m, 0.55 + f * 0.22, 0.68 + f * 0.08, 0.55 + f * 0.22);
   for (const m of [F.foreL, F.foreR]) sc(m, 0.42 + f * 0.16, 0.56 + f * 0.06, 0.42 + f * 0.16);
   for (const [m, sx] of [[F.shoulderL, 1], [F.shoulderR, -1]]) { sc(m, 0.5 + f * 0.22, 0.48 + f * 0.14, 0.5 + f * 0.2); m.position.set(sx * (1.2 + f * 0.36), 0.48, 0); }
@@ -732,8 +751,17 @@ function setCharFat(c, f) {
   sc(F.chin2, 0.05 + g * 0.38, 0.04 + g * 0.13, 0.04 + g * 0.24); F.chin2.position.set(0, -0.68 - g * 0.06, 0.16 + g * 0.08);
   for (const [m, sx] of [[F.cheekL, 1], [F.cheekR, -1]]) { sc(m, 0.05 + g * 0.14, 0.05 + g * 0.13, 0.05 + g * 0.12); m.position.x = sx * (0.42 + g * 0.04); }
   for (const m of [F.flabL, F.flabR]) { sc(m, 0.3 + f * 0.2, 0.32 + f * 0.12, 0.15 + f * 0.25); m.position.z = -(0.42 + f * 0.25); }
-  const Q = c.piv; Q.lsh.position.x = 1.6 + f * 0.38; Q.rsh.position.x = -(1.6 + f * 0.38); Q.lhip.position.x = 0.52 + f * 0.35; Q.rhip.position.x = -(0.52 + f * 0.35);
+  const Q = c.piv, sx0 = c.shoulderX || 1.6, hx0 = c.hipX || 0.52; Q.lsh.position.x = sx0 + f * 0.38; Q.rsh.position.x = -(sx0 + f * 0.38); Q.lhip.position.x = hx0 + f * 0.35; Q.rhip.position.x = -(hx0 + f * 0.35);
   c.chinY = F.chin.position.y; c.buttSY = F.butt.scale.y; c.fatBase = true;
+}
+function applyBodyType(c, t) {
+  const T = BODY_TYPES[t] || {}, P = c.parts, Q = c.piv;
+  const set = (h, v) => { if (v) h.scale.set(v[0], v[1], v[2]); };
+  set(P.ut, T.ut); set(P.lt, T.lt); set(P.lua, T.ua); set(P.rua, T.ua); set(P.lla, T.la); set(P.rla, T.la);
+  set(P.lul, T.ul); set(P.rul, T.ul); set(P.lll, T.ll); set(P.rll, T.ll);
+  c.shoulderX = T.sh || 1.6; c.hipX = T.hip || 0.52; c.ltBase = T.lt || [1, 1, 1];
+  Q.lsh.position.x = c.shoulderX; Q.rsh.position.x = -c.shoulderX; Q.lhip.position.x = c.hipX; Q.rhip.position.x = -c.hipX;
+  if (T.scale) c.group.scale.setScalar(T.scale);
 }
 function setFace(c, scared) { c.faceMesh.material[0] = scared ? c.faces.scared : c.faces.normal; }
 // visible wounds stuck on the body
@@ -1057,6 +1085,10 @@ const LINES = {
   laser: ["Is that a laser sword?!", "Whoa, it's glowing!", "Don't slice me with that!"],
   thawed: ["That was SO cold!", "I can feel my legs again!", "Brrr... what happened?!"],
   piranha: ["PIRANHAS!!", "THEY'RE BITING ME!", "MY TOES!", "GET THEM OFF!"],
+  shark: ["SHAAAARK!", "GET ME OUT!", "IT'S HUGE!", "We're gonna need a bigger pool!"],
+  helium: ["I'm floating away!", "Weeeee!", "Get me down!", "My voice sounds funny!"],
+  paint: ["I'm all colourful!", "Is this permanent?!", "I look amazing!"],
+  hole: ["NOOOO!", "It's pulling me in!", "AAAAAAA-"],
   bloodpool: ["EWWW, BLOOD!", "Is this REAL blood?!", "I'm gonna be sick..."],
   choc: ["Mmm... chocolate...", "I'm getting so fat!", "Too much chocolate!"],
   thanks: ["Thank you!!", "I feel better!", "You saved me!", "Wait... you're helping me?", "My hero!", "Thanks, doc!"],
@@ -2068,6 +2100,7 @@ const smokeMat = new THREE.MeshBasicMaterial({ color: 0x555555, transparent: tru
 const CHAR_MAT = new THREE.MeshLambertMaterial({ color: 0x1d1714 });
 const bubbleMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, depthWrite: false });
 const sparkMat = new THREE.MeshBasicMaterial({ color: 0x9ffcff, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+const holeMat = new THREE.MeshBasicMaterial({ color: 0xb388ff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
 const healMat = new THREE.MeshBasicMaterial({ color: 0x5dff6a, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
 const fires = [], rockets = [];
 function spawnFire(pos, vel, life = 0.6, size = 1, smoke = false, mat = null) {
@@ -2267,19 +2300,38 @@ function liquidEffect(p, q, dt, rd) {
     if (p.isPlayer) { if (p.alive) { goldPerson(p); } } else goldPerson(p);
   } else if (k === "blood") {
     if (p.npc && Math.random() < dt * 0.5) say(p.npc, "bloodpool", 1.8);
-  } else if (k === "piranha") {
+  } else if (k === "helium") {
+    p.helium = 7;
+    if (p.npc && p.alive) { say(p.npc, "helium", 2); knockDown(p.npc, V(0, 6, 0), true); return; }
+  } else if (k === "paint") {
+    if (!p.painted) { p.painted = true; paintParts(partsOf(p), pick([0xff1744, 0x00e676, 0x2979ff, 0xffea00, 0xd500f9, 0xff9100, 0x00e5ff])); if (p.npc) say(p.npc, "paint", 1.8); }
+  } else if (k === "hole") {
+    if (p.npc && p.alive) { say(p.npc, "hole", 1.5); knockDown(p.npc, V(0, 2, 0), true); return; }
+    if (rd) {
+      rd.spag = (rd.spag || 0) + dt;
+      if (!rd.spagBase) { rd.spagBase = {}; for (const kk in rd.parts) rd.spagBase[kk] = rd.parts[kk].scale.clone(); popup("🕳️ SPAGHETTIFIED!", limbCenter(rd, "torso"), "#b388ff"); if (!p.isPlayer) earn(25, limbCenter(rd, "torso"), false); }
+      const t = Math.min(1, rd.spag / 1.6);
+      for (const kk in rd.parts) rd.parts[kk].scale.set(rd.spagBase[kk].x * (1 - t * 0.95), rd.spagBase[kk].y * (1 + t * 3), rd.spagBase[kk].z * (1 - t * 0.95));
+      for (const pt of rd.pts) { pt.x += (q.cx - pt.x) * dt * 2; pt.z += (q.cz - pt.z) * dt * 2; }
+      if (p.alive) die(p, "sucked into a black hole");
+      if (rd.spag > 1.6) { for (const kk in rd.parts) rd.parts[kk].visible = false; if (rd !== player.rd) removeRagdoll(rd); }
+    } else if (p.isPlayer) ragdollPlayer(V(0, -2, 0));
+  } else if (k === "piranha" || k === "shark") {
     if (p.alive) { p.blood -= (p.isPlayer ? 6 : 8) * dt; if (p.isPlayer) { p.lastHurt = performance.now(); p.bleedStop = false; post.hurt = Math.max(post.hurt, 0.35); } }
     const c = rd ? limbCenter(rd, "torso") : p.npc ? p.npc.pos.clone().setY(p.npc.pos.y + 2) : player.pos.clone().setY(player.pos.y + 2);
     if (Math.random() < dt * 6) spawnBlood(c, V(0, 2, 0), 2, 2);
-    if (p.npc && p.alive) { say(p.npc, "piranha", 1.6); knockDown(p.npc, V(0, 2, 0)); return; }
+    if (p.npc && p.alive) { say(p.npc, k === "shark" ? "shark" : "piranha", 1.6); knockDown(p.npc, V(0, 2, 0)); return; }
     if (p.isPlayer && !rd) { p.dipT = (p.dipT || 0) + dt; if (p.dipT > 1.5) { p.dipT = 0; ragdollPlayer(V(0, 1, 0)); popup("The piranhas got you!", player.pos.clone().setY(player.pos.y + 3), "#ff5252"); } }
     if (p.isPlayer && Math.random() < dt * 1.5) { addWound(partsOf(p), pick(["lll", "rll", "lul", "rul", "lla", "rla"])); sfx.squish(); }
     if (rd) {
       rd.biteT = (rd.biteT || 0) + dt;
-      if (rd.biteT > 1.0) {
+      if (rd.biteT > (k === "shark" ? 1.4 : 1.0)) {
         rd.biteT = 0;
-        const left = ["ll", "rl", "la", "ra", "head"].filter(x => !rd.detached[x]);
-        if (left.length) { const part = left[0]; detach(rd, part, V(0, 1, 0)); popup("CHOMP!", limbCenter(rd, part), "#ff5252"); if (!p.isPlayer) earn(10, limbCenter(rd, part), false); }
+        for (let bite = 0; bite < (k === "shark" ? 2 : 1); bite++) {
+          const left = ["ll", "rl", "la", "ra", "head"].filter(x => !rd.detached[x]);
+          if (left.length) { const part = left[0]; detach(rd, part, V(0, 1, 0)); popup(k === "shark" ? "🦈 CHOMP!" : "CHOMP!", limbCenter(rd, part), "#ff5252"); if (!p.isPlayer) earn(10, limbCenter(rd, part), false); }
+        }
+        if (k === "shark") { goreBurst("torso", limbCenter(rd, "torso"), V(0, 3, 0), rd.skin); sfx.squish(); }
       }
       if (["la", "ra", "ll", "rl", "head"].every(x => rd.detached[x])) meltBody(rd, dt * 0.8);
     }
@@ -2328,11 +2380,46 @@ function updatePools(dt) {
   for (const q of pools) {
     if (q.type === "oil" && q.burnT > 0) { q.burnT -= dt; for (let i = 0; i < 3; i++) spawnFire(V(rand(q.minX, q.maxX), q.surf, rand(q.minZ, q.maxZ)), V(rand(-1, 1), rand(3, 7), rand(-1, 1)), rand(0.5, 1), rand(1, 1.8)); if (Math.random() < dt * 4) spawnFire(V(q.cx + rand(-5, 5), q.surf + 2, q.cz + rand(-5, 5)), V(0, 4, 0), 2, 2, true); }
     if (q.type === "soda" && Math.random() < dt * 12) spawnFire(V(rand(q.minX, q.maxX), q.surf - 0.2, rand(q.minZ, q.maxZ)), V(0, rand(2, 4), 0), 0.6, 0.25, false, bubbleMat);
+    if (q.type === "paint") q.mesh.material.color.setHSL((performance.now() / 4000) % 1, 0.8, 0.55);
+    if (q.type === "hole") {
+      for (let i = 0; i < 3; i++) { const a = rand(0, 6.28), r = rand(6, 12); spawnFire(V(q.cx + Math.cos(a) * r, q.surf + rand(0, 2), q.cz + Math.sin(a) * r), V(-Math.cos(a) * r * 1.5 - Math.sin(a) * 6, -0.5, -Math.sin(a) * r * 1.5 + Math.cos(a) * 6), 0.6, 0.35, false, holeMat); }
+      const R = 24;
+      for (const n of npcs.slice()) {
+        const d = Math.hypot(n.pos.x - q.cx, n.pos.z - q.cz);
+        if (d >= R || n.state === "frozen" || n.state === "statue") continue;
+        if (d < 13) { say(n, "hole", 1.5); knockDown(n, V((q.cx - n.pos.x) * 1.5, 18, (q.cz - n.pos.z) * 1.5), true); }
+        else { n.pos.x += (q.cx - n.pos.x) / d * 3 * dt; n.pos.z += (q.cz - n.pos.z) / d * 3 * dt; }
+      }
+      for (const rd of ragdolls) {
+        if (rd.frozen) continue;
+        const c = rd.pts[1], d = Math.hypot(c.x - q.cx, c.z - q.cz);
+        if (d >= R) continue;
+        const k = (1 - d / R) * 40;
+        for (let i = 0; i < rd.pts.length; i++) {
+          const pt = rd.pts[i], o = rd.prev[i];
+          o.x -= (q.cx - pt.x) / Math.max(d, 1) * k * dt * RAG_H; o.z -= (q.cz - pt.z) / Math.max(d, 1) * k * dt * RAG_H;
+          if (d > 6.5) o.y -= 45 * dt * RAG_H;
+        }
+        rd.sleep = false; rd.still = 0;
+      }
+      const pd = Math.hypot(player.pos.x - q.cx, player.pos.z - q.cz);
+      if (pd < R && player.person.alive && !player.rd) { player.kb.x += (q.cx - player.pos.x) / pd * 9 * dt; player.kb.z += (q.cz - player.pos.z) / pd * 9 * dt; }
+    }
     if (q.fish) for (const f of q.fish) { f.a += f.s * dt; f.m.position.set(q.cx + Math.cos(f.a) * f.r, q.surf - f.y + Math.sin(f.a * 3) * 0.2, q.cz + Math.sin(f.a) * f.r); f.m.rotation.y = -f.a + (f.s > 0 ? 0 : Math.PI); }
     if (q.type === "nitro" && Math.random() < dt * 8) spawnFire(V(rand(q.minX, q.maxX), q.surf + 0.3, rand(q.minZ, q.maxZ)), V(rand(-1, 1), rand(0.5, 1.5), rand(-1, 1)), 1.5, 1.4, false, bubbleMat);
     if (q.type === "zap" && Math.random() < dt * 6) spawnFire(V(rand(q.minX, q.maxX), q.surf, rand(q.minZ, q.maxZ)), V(rand(-4, 4), rand(1, 5), rand(-4, 4)), 0.12, 0.3, false, sparkMat);
   }
   if (player.inPool && player.inPool.T.fizzy && !player.rd && Math.random() < dt * 1.2) player.vy = 18;
+  for (const rd of ragdolls) {
+    const hp = rd.person; if (!hp || !(hp.helium > 0)) continue;
+    hp.helium -= dt;
+    // float up at a steady speed until about 28 high, then hover
+    const target = (rd.pts[1].y < 28 ? 8 : 1.2) * RAG_H, k = 0.5;
+    for (let i = 0; i < rd.pts.length; i++) { const cur = rd.pts[i].y - rd.prev[i].y; rd.prev[i].y = rd.pts[i].y - (cur + (target - cur) * k); }
+    rd.sleep = false; rd.still = 0;
+    if (hp.alive && Math.random() < dt * 0.4) say(hp, "helium", 1.8);
+  }
+  if (player.person.helium > 0) { player.person.helium -= dt; if (!player.rd) player.vy += (player.pos.y < 25 ? 56 : 50) * dt; }
   const pp = player.person, ppos = player.rd ? player.rd.pts[1] : V(player.pos.x, player.pos.y + 1, player.pos.z);
   const pq = poolAt(ppos);
   if (pq !== player.inPool) {
@@ -2361,6 +2448,14 @@ function updatePools(dt) {
     if (q && ragdolls.includes(rd)) liquidEffect(rd.person, q, dt, rd);
   }
 }
+function paintParts(parts, col) {
+  if (!parts) return;
+  const mat = M(col);
+  for (const k in parts) parts[k].traverse(o => {
+    if (!o.isMesh || o.userData.deco || (o.parent && o.parent.userData.deco)) return;
+    o.material = Array.isArray(o.material) ? o.material.map((m, i) => i === 0 ? m : mat) : mat;
+  });
+}
 // ---- switching between the city and the Pool Lab ----
 const modeBanner = document.getElementById("modeBanner");
 function clearWorldPeople() {
@@ -2380,7 +2475,7 @@ function clearWorldPeople() {
 }
 function enterLab() {
   if (mode !== "lab") { clearWorldPeople(); mode = "lab"; for (let i = 0; i < 12; i++) spawnNPC(); }
-  player.pos.set(LAB.x, 0.3, LAB.z + 102); player.vy = 0; player.heading = Math.PI; camYaw = 0;
+  player.pos.set(LAB.x, 0.3, LAB.z + 122); player.vy = 0; player.heading = Math.PI; camYaw = 0;
   modeBanner.style.display = "block"; popup("🧪 Welcome to the POOL LAB!", player.pos, "#4dd0e1");
 }
 function enterCity() {
@@ -2735,7 +2830,7 @@ function respawn() {
   if (player.rd) removeRagdoll(player.rd);
   player.rd = null; player.grab = null;
   player.person = newPlayerPerson();
-  if (mode === "lab") player.pos.set(LAB.x, 0.3, LAB.z + 102); else player.pos.set(4, 0, 4);
+  if (mode === "lab") player.pos.set(LAB.x, 0.3, LAB.z + 122); else player.pos.set(4, 0, 4);
   player.vy = 0; player.kb.set(0, 0, 0); player.inPool = null; player.person.air = MAX_AIR; player.person.underT = 0;
   buildPlayerChar();
   document.getElementById("death").classList.remove("open");
@@ -2853,7 +2948,7 @@ document.getElementById("bSpawn").onclick = () => openMenu("spawn");
 document.getElementById("shopClose").onclick = () => openMenu(null);
 const roofs = () => buildings.filter(b => b.roof);
 function teleport(p) {
-  if (mode === "lab" && Math.abs(p.z - LAB.z) > 150) enterCity();
+  if (mode === "lab" && Math.abs(p.z - LAB.z) > 175) enterCity();
   if (player.rd) getUpPlayer();
   player.pos.copy(p); player.vy = 0;
   popup("Teleported!", player.pos, "#d6b8ff"); sfx.buy();
@@ -2879,7 +2974,7 @@ const MENUS = {
     ["🌳 Park", "The park in the middle of town", () => teleport(V(28 + rand(-6, 6), 0.3, 28 + rand(-6, 6)))],
     ["🛣️ Busy Street", "Somewhere with lots of people", () => { let best = null, bc = -1; for (const n of npcs) { const c = npcs.filter(m => m.pos.distanceTo(n.pos) < 20).length; if (c > bc && n.pos.y < 1) { bc = c; best = n; } } const p = best ? best.pos.clone().add(V(4, 0, 4)) : V(4, 0, 4); collide(p, 1.1); teleport(p); }],
     ["🏠 Back to Start", "Where you first spawned in the city", () => teleport(V(4, 0, 4))],
-    ["🧪 Pool Lab", "16 pools: milk, acid, lava, honey, gravy, slime, water, ice, oil, soda, chocolate, electric, piranhas, nitrogen, gold, blood", () => enterLab()]
+    ["🧪 Pool Lab", "20 pools: milk, acid, lava, honey, gravy, slime, water, ice, oil, soda, chocolate, electric, piranhas, nitrogen, gold, blood, shark, helium, paint, black hole", () => enterLab()]
   ] },
   spawn: { title: "➕ Spawn", items: [
     ["🧍 Dummy", "A grey dummy that just stands there", () => spawnFront(1, true)],
@@ -2976,6 +3071,7 @@ function renderAvatarRows() {
     for (const o of list) { const s = document.createElement("span"); s.className = "opt" + (L[key] === o ? " on" : ""); s.textContent = o; s.onclick = () => setLook(key, o); r.appendChild(s); }
     el.appendChild(r);
   };
+  optRow("Body type", "bodyType", BODY_TYPE_NAMES);
   colorRow("Skin", "skin", SKINS); optRow("Face", "face", FACES);
   const fr = document.createElement("div"); fr.className = "arow";
   const pct = Math.round((L.fat || 0) * 100), tier = FAT_TIERS.indexOf(save.fatMax);
